@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>【五年丙班】作業繳交統計表</title>
+    <title>【五年丙班】作業繳交統計表 (雲端同步版)</title>
     <style>
         :root {
             --primary-color: #4a90e2;
             --bg-color: #f5f7fa;
             --border-color: #bbb;
-            --missing-color: #ffcccc; /* 淺紅底 */
-            --correction-color: #fff4cc; /* 淺黃底 */
+            --missing-color: #ffcccc;
+            --correction-color: #fff4cc;
             --header-bg: #4a90e2;
             --side-bg: #357abd;
         }
@@ -37,9 +37,41 @@
             flex: 1;
             display: flex;
             flex-direction: column;
+            position: relative;
         }
 
-        /* 頂部控制區 (標題置中 + 玉米圖案) */
+        /* 載入遮罩 */
+        #loadingOverlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255,255,255,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            border-radius: 8px;
+            font-size: 1.2rem;
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+
+        /* 頂部設定 */
+        .settings-bar {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+            font-size: 12px;
+            background: #eee;
+            padding: 5px;
+            border-radius: 4px;
+        }
+        .settings-bar input {
+            flex: 1;
+            padding: 4px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+
         .header-controls {
             position: relative;
             display: flex;
@@ -58,27 +90,22 @@
             justify-content: center;
         }
 
-        /* Q版玉米圖案樣式 */
         .corn-icon {
             font-size: 1.8rem;
             margin: 0 8px;
             display: inline-block;
-            /* 增加一點可愛的傾斜感 */
             transform: rotate(-10deg);
             filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.2));
         }
-        .corn-icon.right {
-             transform: rotate(10deg);
-        }
+        .corn-icon.right { transform: rotate(10deg); }
 
-        /* 日期選擇器移到右側 */
         .date-wrapper {
             position: absolute;
             right: 0;
             display: flex;
             align-items: center;
             font-size: 14px;
-            background: rgba(255,255,255,0.8); /* 防止擋住標題時看不清 */
+            background: rgba(255,255,255,0.9);
             padding-left: 5px;
         }
 
@@ -98,7 +125,6 @@
         }
         .legend span { margin-left: 15px; display: inline-flex; align-items: center; }
         
-        /* 圖例的小示範格 */
         .demo-box {
             width: 20px;
             height: 20px;
@@ -113,7 +139,7 @@
 
         /* 表格核心樣式 */
         .table-wrapper {
-            flex: 1; /* 佔滿剩餘高度 */
+            flex: 1;
             width: 100%;
             overflow: auto; 
         }
@@ -121,25 +147,23 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            table-layout: fixed; /* 固定佈局 */
+            table-layout: fixed; 
         }
 
         th, td {
             border: 1px solid var(--border-color);
             padding: 0;
             text-align: center;
-            font-size: 18px; /* 符號稍微大一點 */
+            font-size: 18px; 
             height: 35px;
             overflow: hidden;
             white-space: nowrap;
             vertical-align: middle;
         }
 
-        /* 調整欄寬比例 */
         col.subject-col { width: 110px; }
         col.student-col { width: auto; }
 
-        /* 表頭 (座號) */
         thead th {
             background-color: var(--header-bg);
             color: white;
@@ -149,7 +173,6 @@
             z-index: 10;
         }
 
-        /* 左側 (科目) */
         tbody th {
             background-color: var(--side-bg);
             color: white;
@@ -161,46 +184,30 @@
             z-index: 5;
         }
 
-        /* 左上角空白格 */
-        thead th:first-child {
-            z-index: 20;
-            left: 0;
-        }
+        thead th:first-child { z-index: 20; left: 0; }
 
-        /* 可編輯的標題 */
-        .editable-header {
-            cursor: text;
-        }
+        .editable-header { cursor: text; }
         .editable-header:hover {
             background-color: #2a629c;
             text-decoration: underline;
         }
 
-        td {
-            cursor: pointer;
-            transition: background 0.1s;
-        }
+        td { cursor: pointer; transition: background 0.1s; }
+        td:hover { background-color: #eee; border: 2px solid #555; }
 
-        td:hover {
-            background-color: #eee;
-            border: 2px solid #555;
-        }
-
-        /* 狀態樣式 - 顯示符號 */
         td.status-missing {
             background-color: var(--missing-color);
-            color: #d32f2f; /* 深紅色 */
+            color: #d32f2f;
             font-weight: bold;
         }
         
         td.status-correction {
             background-color: var(--correction-color);
-            color: #e65100; /* 深橘色 */
+            color: #e65100;
             font-weight: bold;
-            font-size: 20px; /* ※ 符號稍微加大 */
+            font-size: 20px;
         }
 
-        /* 底部統計區 */
         .summary-section {
             margin-top: 10px;
             padding: 10px;
@@ -232,13 +239,24 @@
             margin-left: 5px;
         }
         .btn:hover { opacity: 0.9; }
-        .btn-clear { background-color: #757575; }
+        .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #ccc; margin-right: 5px;}
+        .status-dot.online { background: #4caf50; }
+        .status-dot.error { background: #f44336; }
 
     </style>
 </head>
 <body>
 
 <div class="container">
+    <div id="loadingOverlay">雲端同步中...🌽</div>
+
+    <div class="settings-bar">
+        <span id="apiStatus" class="status-dot" title="連線狀態"></span>
+        <label>Google Script 網址：</label>
+        <input type="text" id="apiUrl" placeholder="請貼上部署後的網址 (https://script.google.com/.../exec)">
+        <button class="btn" onclick="saveApiUrl()">綁定</button>
+    </div>
+
     <div class="header-controls">
         <h1>
             <span class="corn-icon">🌽</span>
@@ -261,13 +279,11 @@
         <table id="homeworkTable">
             <colgroup>
                 <col class="subject-col">
-                </colgroup>
+            </colgroup>
             <thead>
-                <tr id="headerRow">
-                    </tr>
+                <tr id="headerRow"></tr>
             </thead>
-            <tbody id="tableBody">
-                </tbody>
+            <tbody id="tableBody"></tbody>
         </table>
     </div>
 
@@ -276,7 +292,7 @@
             <strong style="font-size:14px;">📊 統計摘要 (依科目)</strong>
             <div>
                 <button class="btn" onclick="copySummary()">複製摘要</button>
-                <button class="btn btn-clear" onclick="clearToday()">清空今日</button>
+                <button class="btn" style="background-color:#f57c00" onclick="forceSave()">強制儲存</button>
             </div>
         </div>
         <textarea id="summaryText" class="summary-box" readonly placeholder="統計資料..."></textarea>
@@ -297,17 +313,23 @@
     ];
     
     const dateInput = document.getElementById('dateInput');
+    const apiUrlInput = document.getElementById('apiUrl');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const apiStatus = document.getElementById('apiStatus');
+
     dateInput.valueAsDate = new Date();
 
     const STATUS_OK = 0;
     const STATUS_MISSING = 1;
     const STATUS_CORRECTION = 2;
 
+    // 延遲存檔用 (防抖動)
+    let saveTimeout;
+
     // 初始化表格
     function initTable() {
         const table = document.getElementById('homeworkTable');
         
-        // 0. 設定 Colgroup
         const colgroup = table.querySelector('colgroup');
         colgroup.innerHTML = '<col class="subject-col">'; 
         for(let i=0; i<STUDENT_COUNT; i++){
@@ -316,7 +338,6 @@
             colgroup.appendChild(col);
         }
 
-        // 1. 生成表頭 (座號)
         const theadRow = document.getElementById('headerRow');
         theadRow.innerHTML = '<th>項目</th>'; 
         for (let i = 1; i <= STUDENT_COUNT; i++) {
@@ -326,14 +347,12 @@
             theadRow.appendChild(th);
         }
 
-        // 2. 生成內容
         const tbody = document.getElementById('tableBody');
         tbody.innerHTML = '';
 
         SUBJECTS.forEach(sub => {
             const tr = document.createElement('tr');
             
-            // 科目名稱欄位
             const thSub = document.createElement('th');
             thSub.textContent = sub.name;
             thSub.title = "點擊可修改名稱"; 
@@ -342,13 +361,12 @@
                 thSub.classList.add('editable-header');
                 thSub.id = sub.id;
                 thSub.addEventListener('input', function() {
-                    localStorage.setItem('header_' + this.id, this.textContent);
+                    localStorage.setItem('header_' + this.id, this.textContent); // 標題仍存本地
                     generateSummary();
                 });
             }
             tr.appendChild(thSub);
 
-            // 學生格子
             for (let i = 1; i <= STUDENT_COUNT; i++) {
                 const td = document.createElement('td');
                 td.dataset.student = i;
@@ -360,7 +378,16 @@
             tbody.appendChild(tr);
         });
         
-        loadData(); 
+        // 檢查是否有儲存的 API URL
+        const savedUrl = localStorage.getItem('gas_api_url');
+        if (savedUrl) {
+            apiUrlInput.value = savedUrl;
+            apiStatus.classList.add('online');
+            loadDataFromCloud();
+        } else {
+            alert("初次使用請輸入 Google Apps Script 網址以啟用雲端同步。");
+        }
+
         loadCustomHeaders();
     }
 
@@ -368,7 +395,11 @@
         let currentStatus = parseInt(cell.dataset.status);
         let nextStatus = (currentStatus + 1) % 3;
         updateCellVisual(cell, nextStatus);
-        saveData();
+        
+        // 自動存檔 (延遲 1 秒，避免連續點擊時頻繁發送請求)
+        clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(saveDataToCloud, 1000);
+        
         generateSummary();
     }
 
@@ -379,17 +410,85 @@
 
         if (status === STATUS_MISSING) {
             cell.classList.add('status-missing');
-            // 更新為實心三角形
             cell.textContent = '▲'; 
         } else if (status === STATUS_CORRECTION) {
             cell.classList.add('status-correction');
-            // 更新為米字號
             cell.textContent = '※'; 
         }
     }
 
-    function saveData() {
+    // --- 雲端功能區 ---
+
+    function saveApiUrl() {
+        const url = apiUrlInput.value.trim();
+        if (url) {
+            localStorage.setItem('gas_api_url', url);
+            apiStatus.classList.add('online');
+            alert("網址已儲存！嘗試載入資料...");
+            loadDataFromCloud();
+        }
+    }
+
+    // 從雲端載入
+    function loadDataFromCloud() {
+        const url = localStorage.getItem('gas_api_url');
+        if (!url) return;
+        
         const date = dateInput.value;
+        loadingOverlay.style.display = 'flex'; // 顯示遮罩
+
+        fetch(`${url}?action=read&date=${date}`)
+        .then(response => response.json())
+        .then(data => {
+            applyDataToTable(data);
+            loadingOverlay.style.display = 'none';
+        })
+        .catch(err => {
+            console.error(err);
+            loadingOverlay.style.display = 'none';
+            apiStatus.classList.remove('online');
+            apiStatus.classList.add('error');
+            alert("讀取失敗，請檢查網址或網路連線。");
+        });
+    }
+
+    // 儲存到雲端
+    function saveDataToCloud() {
+        const url = localStorage.getItem('gas_api_url');
+        if (!url) return;
+
+        const date = dateInput.value;
+        const data = collectTableData();
+
+        // 顯示小小的提示或改變狀態燈
+        apiStatus.style.opacity = 0.5;
+
+        // 使用 fetch POST 發送資料
+        // 注意：GAS Web App 需要用 'no-cors' 或 text/plain 來避免跨域複雜問題，
+        // 但為了確保資料寫入，我們傳送 Stringified JSON
+        fetch(url + '?action=save&date=' + date, {
+            method: 'POST',
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+            apiStatus.style.opacity = 1;
+            console.log("Saved:", result);
+        })
+        .catch(err => {
+            console.error("Save Error:", err);
+            apiStatus.classList.add('error');
+            alert("儲存失敗！請檢查網路。");
+        });
+    }
+    
+    // 強制儲存按鈕
+    function forceSave() {
+        saveDataToCloud();
+        alert("已送出儲存請求。");
+    }
+
+    function collectTableData() {
         const data = {};
         const cells = document.querySelectorAll('td[data-subject]');
         cells.forEach(cell => {
@@ -401,16 +500,16 @@
                 data[student][subject] = status;
             }
         });
-        localStorage.setItem('hw_record_' + date, JSON.stringify(data));
+        return data;
     }
 
-    function loadData() {
-        const date = dateInput.value;
-        const stored = localStorage.getItem('hw_record_' + date);
-        const data = stored ? JSON.parse(stored) : {};
-
+    function applyDataToTable(data) {
+        // 重置
         const cells = document.querySelectorAll('td[data-subject]');
         cells.forEach(cell => updateCellVisual(cell, STATUS_OK));
+
+        // 填入
+        if (!data) return; // 空資料
 
         for (const student in data) {
             for (const subject in data[student]) {
@@ -422,7 +521,8 @@
         generateSummary();
     }
 
-    // 依科目統計邏輯 (更新摘要文字中的符號)
+    // --- 統計摘要區 ---
+
     function generateSummary() {
         const date = dateInput.value;
         let report = `📅 ${date} 【五年丙班】作業繳交統計：\n`;
@@ -454,7 +554,6 @@
                 let line = `【${subjectName}】`;
                 let parts = [];
                 
-                // 更新摘要中的符號
                 if (missingList.length > 0) {
                     parts.push(`未交(▲): ${missingList.join('、')}`);
                 }
@@ -480,14 +579,6 @@
         });
     }
 
-    function clearToday() {
-        if(confirm("清空今日紀錄？")) {
-            const date = dateInput.value;
-            localStorage.removeItem('hw_record_' + date);
-            loadData();
-        }
-    }
-
     function loadCustomHeaders() {
         SUBJECTS.filter(s => s.editable).forEach(sub => {
             const storedName = localStorage.getItem('header_' + sub.id);
@@ -498,7 +589,7 @@
         });
     }
 
-    dateInput.addEventListener('change', loadData);
+    dateInput.addEventListener('change', loadDataFromCloud);
     initTable();
 </script>
 
