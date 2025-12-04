@@ -72,7 +72,6 @@
             background-color: #b02a37;
         }
         
-        /* 同步狀態提示 */
         #syncStatus {
             font-size: 0.8rem;
             color: #666;
@@ -168,8 +167,41 @@
             font-size: 1.2rem;
         }
 
+        /* 注意事項區塊 (新增) */
+        .notes-container {
+            margin-top: 10px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .notes-label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 0.95rem;
+            color: #333;
+        }
+
+        .notes-textarea {
+            width: 100%;
+            height: 60px;
+            padding: 8px;
+            box-sizing: border-box;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+            resize: vertical; /* 允許使用者垂直拉伸 */
+            font-family: inherit;
+            font-size: 1rem;
+        }
+        
+        .notes-textarea:focus {
+            border-color: var(--primary-color);
+            outline: none;
+        }
+
+        /* 統計摘要區 */
         footer {
-            height: 120px;
+            height: 100px; /* 稍微縮小一點給 Notes 空間 */
             margin-top: 10px;
             padding: 10px;
             background-color: #fff3cd;
@@ -214,7 +246,7 @@
             z-index: 1000;
             font-size: 1.5rem;
             color: #333;
-            display: none; /* 預設隱藏 */
+            display: none; 
         }
     </style>
 </head>
@@ -265,6 +297,11 @@
         </table>
     </div>
 
+    <div class="notes-container">
+        <div class="notes-label">今天注意事項：</div>
+        <textarea id="dailyNote" class="notes-textarea" placeholder="在此輸入事項... (例如：記得帶泳具、發通知單)"></textarea>
+    </div>
+
     <footer>
         <div class="summary-title">統計摘要 (自動生成)</div>
         <div id="summaryContent">目前無未交或未訂正資料。</div>
@@ -275,7 +312,6 @@
         //  設定區：請在此填入您的 Web App URL
         // ==========================================
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwX5mdHEaVaDmqFLOapo_qTbQ63uy5PcZTtUw_2FwlHcVaWeQOcsrHzP6fIyxvvjR6g/exec'; 
-        // 例如：'https://script.google.com/macros/s/AKfycbx.../exec'
         
         const TOTAL_STUDENTS = 27;
         const DEFAULT_SUBJECTS = ["國語作業簿", "數四題", "日記", "國語習作", "預留1", "預留2", "預留3", "預留4"];
@@ -285,28 +321,36 @@
 
         let currentDate = new Date().toISOString().split('T')[0];
         let homeworkData = {}; 
-        let saveTimeout = null; // 用於延遲存檔 (Debounce)
+        let saveTimeout = null; 
 
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('datePicker').value = currentDate;
             renderTable();
             
-            // 首次載入：從雲端抓取
+            // 首次載入
             fetchDataFromCloud();
 
-            // 設定自動更新：每 10 分鐘 (600,000 毫秒)
+            // 自動更新：每 10 分鐘
             setInterval(() => {
                 console.log("自動更新中...");
-                fetchDataFromCloud(true); // true 代表背景靜默更新
+                fetchDataFromCloud(true);
             }, 600000);
 
             document.getElementById('datePicker').addEventListener('change', (e) => {
                 currentDate = e.target.value;
                 loadDateData(currentDate);
             });
+
+            // 監聽注意事項輸入
+            document.getElementById('dailyNote').addEventListener('input', (e) => {
+                const currentDayData = homeworkData[currentDate] || {};
+                currentDayData['note'] = e.target.value;
+                homeworkData[currentDate] = currentDayData;
+                triggerSave(); // 輸入時也觸發防抖動儲存
+            });
         });
 
-        // --- 核心功能：雲端同步 ---
+        // --- 雲端同步 ---
 
         async function fetchDataFromCloud(isBackground = false) {
             if (!SCRIPT_URL.startsWith('http')) {
@@ -335,10 +379,9 @@
         function saveDataToCloud() {
             updateSyncStatus('儲存中...');
             
-            // 使用 Beacon 或普通的 fetch POST
             fetch(SCRIPT_URL, {
                 method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // GAS 接收 plain text 較穩
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify(homeworkData)
             })
             .then(res => res.text())
@@ -352,7 +395,6 @@
             });
         }
 
-        // 防抖動儲存：避免每點一下就發送一次請求，改為停止動作 1.5 秒後才發送
         function triggerSave() {
             updateSyncStatus('等待儲存...');
             if (saveTimeout) clearTimeout(saveTimeout);
@@ -365,7 +407,7 @@
             document.getElementById('syncStatus').textContent = msg;
         }
 
-        // --- 以下為 UI 邏輯 (未變動，僅加入 triggerSave) ---
+        // --- UI 邏輯 ---
 
         function renderTable() {
             const thead = document.getElementById('tableHead');
@@ -408,8 +450,6 @@
             
             updateCellUI(cell, status);
             updateSummary();
-            
-            // 觸發雲端儲存
             triggerSave();
         }
 
@@ -428,6 +468,8 @@
         function loadDateData(date) {
             const currentDayData = homeworkData[date] || {};
             const tbody = document.getElementById('tableBody');
+            
+            // 1. 還原作業狀態
             for (let subIdx = 0; subIdx < DEFAULT_SUBJECTS.length; subIdx++) {
                 const row = tbody.rows[subIdx];
                 for (let stuIdx = 1; stuIdx <= TOTAL_STUDENTS; stuIdx++) {
@@ -437,6 +479,11 @@
                     updateCellUI(cell, status);
                 }
             }
+            
+            // 2. 還原注意事項 (新增功能)
+            const note = currentDayData['note'] || '';
+            document.getElementById('dailyNote').value = note;
+
             updateSummary();
         }
 
@@ -470,8 +517,8 @@
         function clearTodayData() {
             if (confirm(`確定要清除【${currentDate}】的所有紀錄嗎？`)) {
                 delete homeworkData[currentDate];
-                loadDateData(currentDate);
-                triggerSave(); // 清除後也要同步回雲端
+                loadDateData(currentDate); // 這會一併清空畫面上的 note 和表格
+                triggerSave(); 
             }
         }
     </script>
