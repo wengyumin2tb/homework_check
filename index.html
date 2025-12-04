@@ -3,595 +3,477 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>【五年丙班】作業繳交統計表 (雲端同步版)</title>
+    <title>【五年丙班】作業繳交統計表</title>
     <style>
         :root {
             --primary-color: #4a90e2;
-            --bg-color: #f5f7fa;
-            --border-color: #bbb;
-            --missing-color: #ffcccc;
-            --correction-color: #fff4cc;
-            --header-bg: #4a90e2;
-            --side-bg: #357abd;
+            --header-bg: #f8f9fa;
+            --border-color: #dee2e6;
+            --danger-color: #dc3545; /* 未交紅 */
+            --warning-color: #fd7e14; /* 未訂正橘 */
+            --subject-col-width: 100px;
+            --student-col-width: 35px;
         }
 
         body {
-            font-family: "Microsoft JhengHei", "Segoe UI Emoji", Arial, sans-serif;
+            font-family: "Microsoft JhengHei", Arial, sans-serif;
             margin: 0;
             padding: 10px;
-            background-color: var(--bg-color);
-            color: #333;
             height: 100vh;
-            box-sizing: border-box;
             display: flex;
             flex-direction: column;
-        }
-
-        .container {
-            width: 100%;
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             box-sizing: border-box;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            position: relative;
+            background-color: #fff;
+            overflow: hidden; 
         }
 
-        /* 載入遮罩 */
-        #loadingOverlay {
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(255,255,255,0.8);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 100;
-            border-radius: 8px;
-            font-size: 1.2rem;
-            color: var(--primary-color);
-            font-weight: bold;
-        }
-
-        /* 頂部設定 */
-        .settings-bar {
-            display: flex;
-            gap: 5px;
-            margin-bottom: 10px;
-            font-size: 12px;
-            background: #eee;
-            padding: 5px;
-            border-radius: 4px;
-        }
-        .settings-bar input {
-            flex: 1;
-            padding: 4px;
-            border: 1px solid #ccc;
-            border-radius: 3px;
-        }
-
-        .header-controls {
-            position: relative;
+        /* 標題區塊 */
+        header {
             display: flex;
             justify-content: center;
             align-items: center;
             margin-bottom: 10px;
-            min-height: 40px;
+            position: relative;
+            flex-shrink: 0;
         }
 
-        h1 { 
-            margin: 0; 
-            font-size: 1.5rem; 
+        h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            color: #333;
             text-align: center;
-            display: flex;
-            align-items: center;
-            justify-content: center;
         }
 
-        .corn-icon {
-            font-size: 1.8rem;
-            margin: 0 8px;
-            display: inline-block;
-            transform: rotate(-10deg);
-            filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.2));
-        }
-        .corn-icon.right { transform: rotate(10deg); }
-
-        .date-wrapper {
+        .controls {
             position: absolute;
             right: 0;
             display: flex;
             align-items: center;
-            font-size: 14px;
-            background: rgba(255,255,255,0.9);
-            padding-left: 5px;
+            gap: 10px;
         }
 
         .date-picker {
-            padding: 4px;
-            border: 1px solid #ccc;
+            padding: 5px;
+            font-size: 1rem;
+        }
+
+        .btn-clear {
+            background-color: var(--danger-color);
+            color: white;
+            border: none;
+            padding: 6px 12px;
             border-radius: 4px;
-            margin-left: 5px;
-        }
-
-        /* 圖例 */
-        .legend {
+            cursor: pointer;
             font-size: 0.9rem;
-            color: #555;
-            margin-bottom: 5px;
-            text-align: right;
-        }
-        .legend span { margin-left: 15px; display: inline-flex; align-items: center; }
-        
-        .demo-box {
-            width: 20px;
-            height: 20px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            border: 1px solid #ccc;
-            margin-right: 5px;
-            font-size: 16px;
-            font-weight: bold;
+            transition: background-color 0.2s;
         }
 
-        /* 表格核心樣式 */
-        .table-wrapper {
+        .btn-clear:hover {
+            background-color: #b02a37;
+        }
+        
+        /* 同步狀態提示 */
+        #syncStatus {
+            font-size: 0.8rem;
+            color: #666;
+            margin-right: 10px;
+        }
+
+        /* 玉米 SVG */
+        .corn-icon {
+            width: 40px;
+            height: 40px;
+            margin-right: 10px;
+            margin-left: 10px;
+        }
+
+        /* 主表格區 */
+        .table-container {
             flex: 1;
-            width: 100%;
-            overflow: auto; 
+            overflow: auto;
+            border: 2px solid #333;
+            border-radius: 5px;
+            position: relative;
         }
 
         table {
-            width: 100%;
-            border-collapse: collapse;
-            table-layout: fixed; 
+            border-collapse: separate;
+            border-spacing: 0;
+            min-width: 100%;
         }
 
         th, td {
             border: 1px solid var(--border-color);
-            padding: 0;
             text-align: center;
-            font-size: 18px; 
-            height: 35px;
-            overflow: hidden;
-            white-space: nowrap;
+            padding: 4px 2px;
+            font-size: 0.95rem;
+            height: 32px;
             vertical-align: middle;
+            box-sizing: border-box;
         }
 
-        col.subject-col { width: 110px; }
-        col.student-col { width: auto; }
-
-        thead th {
-            background-color: var(--header-bg);
-            color: white;
-            font-size: 12px;
+        /* Sticky Headers */
+        thead tr th {
             position: sticky;
             top: 0;
-            z-index: 10;
+            z-index: 20;
+            background-color: #444;
+            color: white;
+            font-weight: normal;
+            min-width: var(--student-col-width);
         }
 
-        tbody th {
-            background-color: var(--side-bg);
-            color: white;
-            text-align: left;
-            padding-left: 10px;
-            font-size: 14px;
+        thead tr th:first-child {
             position: sticky;
             left: 0;
-            z-index: 5;
+            z-index: 30;
+            width: var(--subject-col-width);
+            min-width: var(--subject-col-width);
+            background-color: #444; 
         }
 
-        thead th:first-child { z-index: 20; left: 0; }
-
-        .editable-header { cursor: text; }
-        .editable-header:hover {
-            background-color: #2a629c;
-            text-decoration: underline;
-        }
-
-        td { cursor: pointer; transition: background 0.1s; }
-        td:hover { background-color: #eee; border: 2px solid #555; }
-
-        td.status-missing {
-            background-color: var(--missing-color);
-            color: #d32f2f;
+        tbody tr td:first-child {
+            position: sticky;
+            left: 0;
+            z-index: 10;
+            background-color: #f1f1f1;
             font-weight: bold;
-        }
-        
-        td.status-correction {
-            background-color: var(--correction-color);
-            color: #e65100;
-            font-weight: bold;
-            font-size: 20px;
+            color: #333;
+            text-align: left;
+            padding-left: 10px;
+            width: var(--subject-col-width);
+            min-width: var(--subject-col-width);
+            border-right: 2px solid #ccc;
         }
 
-        .summary-section {
+        td:not(:first-child) {
+            cursor: pointer;
+            user-select: none;
+            min-width: var(--student-col-width);
+        }
+
+        td:not(:first-child):hover {
+            background-color: #f0f8ff;
+        }
+
+        .status-missing {
+            color: var(--danger-color);
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .status-correction {
+            color: var(--warning-color);
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        footer {
+            height: 120px;
             margin-top: 10px;
             padding: 10px;
-            background-color: #eee;
-            border-radius: 4px;
+            background-color: #fff3cd;
+            border: 2px solid #ffeeba;
+            border-radius: 5px;
+            overflow-y: auto;
+            font-size: 0.9rem;
             flex-shrink: 0;
         }
 
-        .summary-box {
-            width: 100%;
-            height: 100px;
-            margin-top: 5px;
-            padding: 5px;
-            box-sizing: border-box;
-            font-size: 13px;
-            border: 1px solid #ccc;
-            line-height: 1.5;
-            font-family: inherit;
+        .summary-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+            border-bottom: 1px solid #dcb;
+            padding-bottom: 3px;
         }
 
-        .btn {
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            padding: 4px 12px;
+        .summary-item {
+            margin-bottom: 4px;
+            line-height: 1.4;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 6px;
             border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-            margin-left: 5px;
+            color: white;
+            font-size: 0.8rem;
+            margin-right: 5px;
         }
-        .btn:hover { opacity: 0.9; }
-        .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #ccc; margin-right: 5px;}
-        .status-dot.online { background: #4caf50; }
-        .status-dot.error { background: #f44336; }
+        .bg-missing { background-color: var(--danger-color); }
+        .bg-correction { background-color: var(--warning-color); }
 
+        /* Loading遮罩 */
+        #loadingOverlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            font-size: 1.5rem;
+            color: #333;
+            display: none; /* 預設隱藏 */
+        }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div id="loadingOverlay">雲端同步中...🌽</div>
+    <div id="loadingOverlay">資料同步中...</div>
 
-    <div class="settings-bar">
-        <span id="apiStatus" class="status-dot" title="連線狀態"></span>
-        <label>Google Script 網址：</label>
-        <input type="text" id="apiUrl" placeholder="請貼上部署後的網址 (https://script.google.com/.../exec)">
-        <button class="btn" onclick="saveApiUrl()">綁定</button>
-    </div>
+    <header>
+        <svg class="corn-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <path d="M50 95 Q20 80 10 40 Q30 90 50 95 Z" fill="#76c043" stroke="#5da035" stroke-width="2"/>
+            <path d="M50 95 Q80 80 90 40 Q70 90 50 95 Z" fill="#76c043" stroke="#5da035" stroke-width="2"/>
+            <ellipse cx="50" cy="45" rx="25" ry="40" fill="#fcd116" stroke="#f4b400" stroke-width="2"/>
+            <path d="M35 25 Q50 20 65 25" fill="none" stroke="#f4b400" stroke-width="2" opacity="0.6"/>
+            <path d="M30 35 Q50 30 70 35" fill="none" stroke="#f4b400" stroke-width="2" opacity="0.6"/>
+            <path d="M30 45 Q50 40 70 45" fill="none" stroke="#f4b400" stroke-width="2" opacity="0.6"/>
+            <path d="M35 55 Q50 50 65 55" fill="none" stroke="#f4b400" stroke-width="2" opacity="0.6"/>
+            <circle cx="42" cy="40" r="3" fill="#333"/>
+            <circle cx="58" cy="40" r="3" fill="#333"/>
+            <path d="M45 48 Q50 52 55 48" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round"/>
+        </svg>
 
-    <div class="header-controls">
-        <h1>
-            <span class="corn-icon">🌽</span>
-            【五年丙班】作業繳交統計表
-            <span class="corn-icon right">🌽</span>
-        </h1>
-        <div class="date-wrapper">
-            <label for="dateInput">日期：</label>
-            <input type="date" id="dateInput" class="date-picker">
+        <h1>【五年丙班】作業繳交統計表</h1>
+        
+        <svg class="corn-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="transform: scaleX(-1);">
+            <path d="M50 95 Q20 80 10 40 Q30 90 50 95 Z" fill="#76c043" stroke="#5da035" stroke-width="2"/>
+            <path d="M50 95 Q80 80 90 40 Q70 90 50 95 Z" fill="#76c043" stroke="#5da035" stroke-width="2"/>
+            <ellipse cx="50" cy="45" rx="25" ry="40" fill="#fcd116" stroke="#f4b400" stroke-width="2"/>
+            <path d="M35 25 Q50 20 65 25" fill="none" stroke="#f4b400" stroke-width="2" opacity="0.6"/>
+            <path d="M30 35 Q50 30 70 35" fill="none" stroke="#f4b400" stroke-width="2" opacity="0.6"/>
+            <path d="M30 45 Q50 40 70 45" fill="none" stroke="#f4b400" stroke-width="2" opacity="0.6"/>
+            <path d="M35 55 Q50 50 65 55" fill="none" stroke="#f4b400" stroke-width="2" opacity="0.6"/>
+            <circle cx="42" cy="40" r="3" fill="#333"/>
+            <circle cx="58" cy="40" r="3" fill="#333"/>
+            <path d="M45 48 Q50 52 55 48" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+
+        <div class="controls">
+            <span id="syncStatus"></span>
+            <button class="btn-clear" onclick="clearTodayData()">清除本日紀錄</button>
+            <input type="date" id="datePicker" class="date-picker">
         </div>
-    </div>
+    </header>
 
-    <div class="legend">
-        <span><div class="demo-box" style="background:white"></div> 完成</span>
-        <span><div class="demo-box" style="background:#ffcccc; color:#d32f2f">▲</div> 未交</span>
-        <span><div class="demo-box" style="background:#fff4cc; color:#e65100; font-size:18px;">※</div> 未訂正</span>
-    </div>
-
-    <div class="table-wrapper">
+    <div class="table-container">
         <table id="homeworkTable">
-            <colgroup>
-                <col class="subject-col">
-            </colgroup>
-            <thead>
-                <tr id="headerRow"></tr>
-            </thead>
+            <thead id="tableHead"></thead>
             <tbody id="tableBody"></tbody>
         </table>
     </div>
 
-    <div class="summary-section">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-            <strong style="font-size:14px;">📊 統計摘要 (依科目)</strong>
-            <div>
-                <button class="btn" onclick="copySummary()">複製摘要</button>
-                <button class="btn" style="background-color:#f57c00" onclick="forceSave()">強制儲存</button>
-            </div>
-        </div>
-        <textarea id="summaryText" class="summary-box" readonly placeholder="統計資料..."></textarea>
-    </div>
-</div>
+    <footer>
+        <div class="summary-title">統計摘要 (自動生成)</div>
+        <div id="summaryContent">目前無未交或未訂正資料。</div>
+    </footer>
 
-<script>
-    const STUDENT_COUNT = 28;
-    // 科目設定
-    const SUBJECTS = [
-        { key: 'chinese_wb', name: '國語作業簿', editable: false },
-        { key: 'math_4', name: '數四題', editable: false },
-        { key: 'diary', name: '日記', editable: false },
-        { key: 'chinese_prac', name: '國語習作', editable: false },
-        { key: 'res_1', name: '保留1', editable: true, id: 'custom1' },
-        { key: 'res_2', name: '保留2', editable: true, id: 'custom2' },
-        { key: 'res_3', name: '保留3', editable: true, id: 'custom3' }
-    ];
-    
-    const dateInput = document.getElementById('dateInput');
-    const apiUrlInput = document.getElementById('apiUrl');
-    const loadingOverlay = document.getElementById('loadingOverlay');
-    const apiStatus = document.getElementById('apiStatus');
-
-    dateInput.valueAsDate = new Date();
-
-    const STATUS_OK = 0;
-    const STATUS_MISSING = 1;
-    const STATUS_CORRECTION = 2;
-
-    // 延遲存檔用 (防抖動)
-    let saveTimeout;
-
-    // 初始化表格
-    function initTable() {
-        const table = document.getElementById('homeworkTable');
+    <script>
+        // ==========================================
+        //  設定區：請在此填入您的 Web App URL
+        // ==========================================
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwX5mdHEaVaDmqFLOapo_qTbQ63uy5PcZTtUw_2FwlHcVaWeQOcsrHzP6fIyxvvjR6g/exec'; 
+        // 例如：'https://script.google.com/macros/s/AKfycbx.../exec'
         
-        const colgroup = table.querySelector('colgroup');
-        colgroup.innerHTML = '<col class="subject-col">'; 
-        for(let i=0; i<STUDENT_COUNT; i++){
-            const col = document.createElement('col');
-            col.className = 'student-col';
-            colgroup.appendChild(col);
-        }
+        const TOTAL_STUDENTS = 27;
+        const DEFAULT_SUBJECTS = ["國語作業簿", "數四題", "日記", "國語習作", "預留1", "預留2", "預留3", "預留4"];
+        const SYMBOL_MISSING = '▲';
+        const SYMBOL_CORRECTION = '※';
+        const STATUS_EMPTY = 0, STATUS_MISSING = 1, STATUS_CORRECTION = 2;
 
-        const theadRow = document.getElementById('headerRow');
-        theadRow.innerHTML = '<th>項目</th>'; 
-        for (let i = 1; i <= STUDENT_COUNT; i++) {
-            const th = document.createElement('th');
-            th.textContent = i;
-            th.title = i + "號"; 
-            theadRow.appendChild(th);
-        }
+        let currentDate = new Date().toISOString().split('T')[0];
+        let homeworkData = {}; 
+        let saveTimeout = null; // 用於延遲存檔 (Debounce)
 
-        const tbody = document.getElementById('tableBody');
-        tbody.innerHTML = '';
-
-        SUBJECTS.forEach(sub => {
-            const tr = document.createElement('tr');
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('datePicker').value = currentDate;
+            renderTable();
             
-            const thSub = document.createElement('th');
-            thSub.textContent = sub.name;
-            thSub.title = "點擊可修改名稱"; 
-            if (sub.editable) {
-                thSub.contentEditable = true;
-                thSub.classList.add('editable-header');
-                thSub.id = sub.id;
-                thSub.addEventListener('input', function() {
-                    localStorage.setItem('header_' + this.id, this.textContent); // 標題仍存本地
-                    generateSummary();
-                });
-            }
-            tr.appendChild(thSub);
+            // 首次載入：從雲端抓取
+            fetchDataFromCloud();
 
-            for (let i = 1; i <= STUDENT_COUNT; i++) {
-                const td = document.createElement('td');
-                td.dataset.student = i;
-                td.dataset.subject = sub.key;
-                td.dataset.status = STATUS_OK;
-                td.onclick = function() { toggleStatus(this); };
-                tr.appendChild(td);
-            }
-            tbody.appendChild(tr);
+            // 設定自動更新：每 10 分鐘 (600,000 毫秒)
+            setInterval(() => {
+                console.log("自動更新中...");
+                fetchDataFromCloud(true); // true 代表背景靜默更新
+            }, 600000);
+
+            document.getElementById('datePicker').addEventListener('change', (e) => {
+                currentDate = e.target.value;
+                loadDateData(currentDate);
+            });
         });
-        
-        // 檢查是否有儲存的 API URL
-        const savedUrl = localStorage.getItem('gas_api_url');
-        if (savedUrl) {
-            apiUrlInput.value = savedUrl;
-            apiStatus.classList.add('online');
-            loadDataFromCloud();
-        } else {
-            alert("初次使用請輸入 Google Apps Script 網址以啟用雲端同步。");
+
+        // --- 核心功能：雲端同步 ---
+
+        async function fetchDataFromCloud(isBackground = false) {
+            if (!SCRIPT_URL.startsWith('http')) {
+                alert("請先設定 Google Apps Script URL！");
+                return;
+            }
+
+            if(!isBackground) document.getElementById('loadingOverlay').style.display = 'flex';
+            updateSyncStatus('同步中...');
+
+            try {
+                const response = await fetch(SCRIPT_URL);
+                const data = await response.json();
+                homeworkData = data || {};
+                loadDateData(currentDate);
+                updateSyncStatus('已同步: ' + new Date().toLocaleTimeString());
+            } catch (e) {
+                console.error(e);
+                updateSyncStatus('同步失敗');
+                if(!isBackground) alert("讀取資料失敗，請檢查網路或 URL");
+            } finally {
+                if(!isBackground) document.getElementById('loadingOverlay').style.display = 'none';
+            }
         }
 
-        loadCustomHeaders();
-    }
-
-    function toggleStatus(cell) {
-        let currentStatus = parseInt(cell.dataset.status);
-        let nextStatus = (currentStatus + 1) % 3;
-        updateCellVisual(cell, nextStatus);
-        
-        // 自動存檔 (延遲 1 秒，避免連續點擊時頻繁發送請求)
-        clearTimeout(saveTimeout);
-        saveTimeout = setTimeout(saveDataToCloud, 1000);
-        
-        generateSummary();
-    }
-
-    function updateCellVisual(cell, status) {
-        cell.dataset.status = status;
-        cell.className = ''; 
-        cell.textContent = ''; 
-
-        if (status === STATUS_MISSING) {
-            cell.classList.add('status-missing');
-            cell.textContent = '▲'; 
-        } else if (status === STATUS_CORRECTION) {
-            cell.classList.add('status-correction');
-            cell.textContent = '※'; 
+        function saveDataToCloud() {
+            updateSyncStatus('儲存中...');
+            
+            // 使用 Beacon 或普通的 fetch POST
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // GAS 接收 plain text 較穩
+                body: JSON.stringify(homeworkData)
+            })
+            .then(res => res.text())
+            .then(txt => {
+                console.log('Save result:', txt);
+                updateSyncStatus('已儲存: ' + new Date().toLocaleTimeString());
+            })
+            .catch(err => {
+                console.error(err);
+                updateSyncStatus('儲存失敗');
+            });
         }
-    }
 
-    // --- 雲端功能區 ---
-
-    function saveApiUrl() {
-        const url = apiUrlInput.value.trim();
-        if (url) {
-            localStorage.setItem('gas_api_url', url);
-            apiStatus.classList.add('online');
-            alert("網址已儲存！嘗試載入資料...");
-            loadDataFromCloud();
+        // 防抖動儲存：避免每點一下就發送一次請求，改為停止動作 1.5 秒後才發送
+        function triggerSave() {
+            updateSyncStatus('等待儲存...');
+            if (saveTimeout) clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                saveDataToCloud();
+            }, 1500);
         }
-    }
 
-    // 從雲端載入
-    function loadDataFromCloud() {
-        const url = localStorage.getItem('gas_api_url');
-        if (!url) return;
-        
-        const date = dateInput.value;
-        loadingOverlay.style.display = 'flex'; // 顯示遮罩
+        function updateSyncStatus(msg) {
+            document.getElementById('syncStatus').textContent = msg;
+        }
 
-        fetch(`${url}?action=read&date=${date}`)
-        .then(response => response.json())
-        .then(data => {
-            applyDataToTable(data);
-            loadingOverlay.style.display = 'none';
-        })
-        .catch(err => {
-            console.error(err);
-            loadingOverlay.style.display = 'none';
-            apiStatus.classList.remove('online');
-            apiStatus.classList.add('error');
-            alert("讀取失敗，請檢查網址或網路連線。");
-        });
-    }
+        // --- 以下為 UI 邏輯 (未變動，僅加入 triggerSave) ---
 
-    // 儲存到雲端
-    function saveDataToCloud() {
-        const url = localStorage.getItem('gas_api_url');
-        if (!url) return;
+        function renderTable() {
+            const thead = document.getElementById('tableHead');
+            const tbody = document.getElementById('tableBody');
+            let headerHTML = '<tr><th>作業項目</th>';
+            for (let i = 1; i <= TOTAL_STUDENTS; i++) headerHTML += `<th>${i}</th>`;
+            headerHTML += '</tr>';
+            thead.innerHTML = headerHTML;
 
-        const date = dateInput.value;
-        const data = collectTableData();
+            tbody.innerHTML = '';
+            DEFAULT_SUBJECTS.forEach((subjectName, subjectIdx) => {
+                const tr = document.createElement('tr');
+                const tdName = document.createElement('td');
+                tdName.textContent = subjectName;
+                if (subjectIdx >= 4) tdName.contentEditable = true;
+                tr.appendChild(tdName);
 
-        // 顯示小小的提示或改變狀態燈
-        apiStatus.style.opacity = 0.5;
+                for (let studentIdx = 1; studentIdx <= TOTAL_STUDENTS; studentIdx++) {
+                    const td = document.createElement('td');
+                    td.dataset.student = studentIdx;
+                    td.dataset.subject = subjectIdx;
+                    td.onclick = () => toggleStatus(td, studentIdx, subjectIdx);
+                    tr.appendChild(td);
+                }
+                tbody.appendChild(tr);
+            });
+        }
 
-        // 使用 fetch POST 發送資料
-        // 注意：GAS Web App 需要用 'no-cors' 或 text/plain 來避免跨域複雜問題，
-        // 但為了確保資料寫入，我們傳送 Stringified JSON
-        fetch(url + '?action=save&date=' + date, {
-            method: 'POST',
-            body: JSON.stringify(data)
-        })
-        .then(response => response.json())
-        .then(result => {
-            apiStatus.style.opacity = 1;
-            console.log("Saved:", result);
-        })
-        .catch(err => {
-            console.error("Save Error:", err);
-            apiStatus.classList.add('error');
-            alert("儲存失敗！請檢查網路。");
-        });
-    }
-    
-    // 強制儲存按鈕
-    function forceSave() {
-        saveDataToCloud();
-        alert("已送出儲存請求。");
-    }
+        function toggleStatus(cell, studentIdx, subjectIdx) {
+            const key = `${studentIdx}-${subjectIdx}`;
+            const currentDayData = homeworkData[currentDate] || {};
+            let status = currentDayData[key] || STATUS_EMPTY;
+            status++;
+            if (status > STATUS_CORRECTION) status = STATUS_EMPTY;
 
-    function collectTableData() {
-        const data = {};
-        const cells = document.querySelectorAll('td[data-subject]');
-        cells.forEach(cell => {
-            const status = parseInt(cell.dataset.status);
-            if (status !== STATUS_OK) {
-                const student = cell.dataset.student;
-                const subject = cell.dataset.subject;
-                if (!data[student]) data[student] = {};
-                data[student][subject] = status;
-            }
-        });
-        return data;
-    }
+            if (status === STATUS_EMPTY) delete currentDayData[key];
+            else currentDayData[key] = status;
 
-    function applyDataToTable(data) {
-        // 重置
-        const cells = document.querySelectorAll('td[data-subject]');
-        cells.forEach(cell => updateCellVisual(cell, STATUS_OK));
+            homeworkData[currentDate] = currentDayData;
+            
+            updateCellUI(cell, status);
+            updateSummary();
+            
+            // 觸發雲端儲存
+            triggerSave();
+        }
 
-        // 填入
-        if (!data) return; // 空資料
-
-        for (const student in data) {
-            for (const subject in data[student]) {
-                const status = data[student][subject];
-                const cell = document.querySelector(`td[data-student="${student}"][data-subject="${subject}"]`);
-                if (cell) updateCellVisual(cell, status);
+        function updateCellUI(cell, status) {
+            cell.className = '';
+            cell.textContent = '';
+            if (status === STATUS_MISSING) {
+                cell.textContent = SYMBOL_MISSING;
+                cell.classList.add('status-missing');
+            } else if (status === STATUS_CORRECTION) {
+                cell.textContent = SYMBOL_CORRECTION;
+                cell.classList.add('status-correction');
             }
         }
-        generateSummary();
-    }
 
-    // --- 統計摘要區 ---
-
-    function generateSummary() {
-        const date = dateInput.value;
-        let report = `📅 ${date} 【五年丙班】作業繳交統計：\n`;
-        let hasData = false;
-
-        SUBJECTS.forEach(sub => {
-            let subjectName = sub.name;
-            if (sub.editable) {
-                const el = document.getElementById(sub.id);
-                if (el && el.textContent) subjectName = el.textContent;
-            }
-
-            let missingList = [];
-            let correctionList = [];
-
-            for (let i = 1; i <= STUDENT_COUNT; i++) {
-                const cell = document.querySelector(`td[data-student="${i}"][data-subject="${sub.key}"]`);
-                if (cell) {
-                    const status = parseInt(cell.dataset.status);
-                    if (status === STATUS_MISSING) {
-                        missingList.push(i);
-                    } else if (status === STATUS_CORRECTION) {
-                        correctionList.push(i);
-                    }
+        function loadDateData(date) {
+            const currentDayData = homeworkData[date] || {};
+            const tbody = document.getElementById('tableBody');
+            for (let subIdx = 0; subIdx < DEFAULT_SUBJECTS.length; subIdx++) {
+                const row = tbody.rows[subIdx];
+                for (let stuIdx = 1; stuIdx <= TOTAL_STUDENTS; stuIdx++) {
+                    const cell = row.cells[stuIdx];
+                    const key = `${stuIdx}-${subIdx}`;
+                    const status = currentDayData[key] || STATUS_EMPTY;
+                    updateCellUI(cell, status);
                 }
             }
+            updateSummary();
+        }
 
-            if (missingList.length > 0 || correctionList.length > 0) {
-                let line = `【${subjectName}】`;
-                let parts = [];
-                
-                if (missingList.length > 0) {
-                    parts.push(`未交(▲): ${missingList.join('、')}`);
+        function updateSummary() {
+            const currentDayData = homeworkData[currentDate] || {};
+            const summaryDiv = document.getElementById('summaryContent');
+            const tbody = document.getElementById('tableBody');
+            let summaryHTML = '', hasData = false;
+
+            for (let subjIdx = 0; subjIdx < DEFAULT_SUBJECTS.length; subjIdx++) {
+                const subjectName = tbody.rows[subjIdx].cells[0].textContent;
+                let missingList = [], correctionList = [];
+                for (let stuIdx = 1; stuIdx <= TOTAL_STUDENTS; stuIdx++) {
+                    const key = `${stuIdx}-${subjIdx}`;
+                    const status = currentDayData[key];
+                    if (status === STATUS_MISSING) missingList.push(stuIdx);
+                    if (status === STATUS_CORRECTION) correctionList.push(stuIdx);
                 }
-                if (correctionList.length > 0) {
-                    parts.push(`未訂(※): ${correctionList.join('、')}`);
+                if (missingList.length > 0 || correctionList.length > 0) {
+                    hasData = true;
+                    let rowHtml = `<div class="summary-item"><strong>${subjectName}</strong>：`;
+                    if (missingList.length > 0) rowHtml += `<span class="badge bg-missing">未交</span> ${missingList.join(', ')} `;
+                    if (correctionList.length > 0) rowHtml += `<span class="badge bg-correction">未訂正</span> ${correctionList.join(', ')}`;
+                    rowHtml += `</div>`;
+                    summaryHTML += rowHtml;
                 }
-                
-                report += line + parts.join('  /  ') + '\n';
-                hasData = true;
             }
-        });
+            summaryDiv.innerHTML = hasData ? summaryHTML : '本日作業全數繳交且訂正完畢！(或尚未輸入)';
+        }
 
-        if (!hasData) report += "全班作業皆已完成！";
-        document.getElementById('summaryText').value = report;
-    }
-
-    function copySummary() {
-        const copyText = document.getElementById("summaryText");
-        copyText.select();
-        copyText.setSelectionRange(0, 99999); 
-        navigator.clipboard.writeText(copyText.value).then(() => {
-            alert("已複製摘要！");
-        });
-    }
-
-    function loadCustomHeaders() {
-        SUBJECTS.filter(s => s.editable).forEach(sub => {
-            const storedName = localStorage.getItem('header_' + sub.id);
-            if (storedName) {
-                const el = document.getElementById(sub.id);
-                if(el) el.textContent = storedName;
+        function clearTodayData() {
+            if (confirm(`確定要清除【${currentDate}】的所有紀錄嗎？`)) {
+                delete homeworkData[currentDate];
+                loadDateData(currentDate);
+                triggerSave(); // 清除後也要同步回雲端
             }
-        });
-    }
-
-    dateInput.addEventListener('change', loadDataFromCloud);
-    initTable();
-</script>
-
+        }
+    </script>
 </body>
 </html>
