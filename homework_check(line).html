@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>作業檢核表 (自動存檔)</title>
+    <style>
+        :root {
+            --bg-ok: #ffffff;
+            --bg-missing: #ffebee;
+            --bg-uncorrected: #fff3e0;
+            --text-missing: #c62828;
+            --text-uncorrected: #ef6c00;
+            --border: #ccc;
+            --header-bg: #4a90e2;
+        }
+
+        body {
+            font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+            background-color: #f5f5f5;
+            padding: 20px;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 98%;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+            background: #eef2f5;
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .controls input {
+            padding: 5px 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 100px;
+        }
+
+        .legend {
+            font-size: 0.9em;
+            margin-left: auto;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .legend span {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .save-status {
+            font-size: 14px;
+            font-weight: bold;
+            color: #2e7d32;
+            margin-left: 10px;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+        .save-status.show { opacity: 1; }
+
+        /* Table Styles - Grid Layout */
+        .table-container {
+            overflow: auto;
+            max-height: 75vh;
+            position: relative;
+            border: 1px solid var(--border);
+        }
+
+        table {
+            border-collapse: separate; 
+            border-spacing: 0;
+            width: 100%;
+        }
+
+        th, td {
+            border-right: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            text-align: center;
+            padding: 8px 4px;
+            font-size: 14px;
+            min-width: 30px;
+        }
+
+        /* 上方凍結窗格 (座號) */
+        thead th {
+            background-color: var(--header-bg);
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            height: 40px;
+        }
+
+        /* 左側凍結窗格 (科目) */
+        tbody th {
+            position: sticky;
+            left: 0;
+            background-color: #f0f7ff;
+            z-index: 5;
+            text-align: left;
+            padding-left: 10px;
+            min-width: 120px;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            border-right: 2px solid #aaa;
+        }
+
+        /* 左上角空白格 */
+        thead th:first-child {
+            position: sticky;
+            left: 0;
+            top: 0;
+            z-index: 20;
+            background-color: var(--header-bg);
+            border-right: 2px solid #aaa;
+            min-width: 120px;
+        }
+
+        /* 點擊狀態樣式 */
+        td.cell-clickable {
+            cursor: pointer;
+            user-select: none;
+        }
+        td.cell-clickable:hover { background-color: #f0f0f0; }
+
+        td[data-status="1"] { background-color: var(--bg-missing); color: var(--text-missing); font-weight: bold; }
+        td[data-status="1"]::after { content: "✕"; }
+
+        td[data-status="2"] { background-color: var(--bg-uncorrected); color: var(--text-uncorrected); font-weight: bold; }
+        td[data-status="2"]::after { content: "△"; }
+
+        td[data-status="0"] { color: #ccc; }
+
+        /* Summary Section */
+        .summary-box {
+            margin-top: 30px;
+            padding: 20px;
+            background: #fff;
+            border: 2px solid #4a90e2;
+            border-radius: 8px;
+        }
+
+        .summary-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            resize: vertical;
+            font-family: monospace;
+        }
+
+        button {
+            background-color: #4a90e2;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover { background-color: #357abd; }
+        
+        button.reset-btn { background-color: #ef5350; }
+        button.reset-btn:hover { background-color: #d32f2f; }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>作業檢核表</h1>
+
+    <div class="controls">
+        <strong>自訂科目：</strong>
+        <input type="text" id="custom1" value="自訂1" oninput="updateSubjectName(4, this.value)">
+        <input type="text" id="custom2" value="自訂2" oninput="updateSubjectName(5, this.value)">
+        <input type="text" id="custom3" value="自訂3" oninput="updateSubjectName(6, this.value)">
+        
+        <div class="legend">
+            <span class="save-status" id="saveMsg">💾 已儲存</span>
+            <span><div class="dot" style="background:#ffebee; border:1px solid red"></div> ✕ 未交</span>
+            <span><div class="dot" style="background:#fff3e0; border:1px solid orange"></div> △ 未訂正</span>
+        </div>
+        <button class="reset-btn" onclick="resetNewDay()">新的一天 (清空記號)</button>
+    </div>
+
+    <div class="table-container">
+        <table id="homeworkTable">
+            <thead>
+                <tr>
+                    <th style="font-size:1.1em;">科目 \ 座號</th>
+                    </tr>
+            </thead>
+            <tbody id="tableBody">
+                </tbody>
+        </table>
+    </div>
+
+    <div class="summary-box">
+        <div class="summary-header">
+            <h3>📊 統計結果</h3>
+            <button onclick="copySummary()">複製內容</button>
+        </div>
+        <textarea id="summaryText" readonly></textarea>
+    </div>
+</div>
+
+<script>
+    const STUDENT_COUNT = 27;
+    // 初始科目 (固定 + 預設自訂)
+    let SUBJECTS = ['國語作業簿', '數四題', '日記', '國語習作', '自訂1', '自訂2', '自訂3'];
+
+    document.addEventListener('DOMContentLoaded', () => {
+        initTableStructure();
+        loadData();      // 讀取記憶
+        updateSummary(); // 更新統計
+    });
+
+    function initTableStructure() {
+        // 1. 生成表頭 (1~27號)
+        const headerRow = document.querySelector('thead tr');
+        while (headerRow.children.length > 1) {
+            headerRow.removeChild(headerRow.lastChild);
+        }
+        
+        for (let i = 1; i <= STUDENT_COUNT; i++) {
+            const th = document.createElement('th');
+            th.textContent = i < 10 ? `0${i}` : i;
+            headerRow.appendChild(th);
+        }
+
+        // 2. 生成表格內容 (列=科目)
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+
+        SUBJECTS.forEach((subject, subjectIdx) => {
+            const tr = document.createElement('tr');
+            
+            // 第一欄：科目名稱
+            const thSub = document.createElement('th');
+            thSub.textContent = subject;
+            thSub.id = `subj-header-${subjectIdx}`;
+            tr.appendChild(thSub);
+
+            // 後續欄位：學生格子
+            for (let i = 1; i <= STUDENT_COUNT; i++) {
+                const td = document.createElement('td');
+                td.className = 'cell-clickable';
+                td.dataset.status = "0"; // 0:ok, 1:missing, 2:uncorrected
+                td.dataset.student = i;
+                td.dataset.subjectIdx = subjectIdx;
+                td.onclick = function() { toggleStatus(this); };
+                tr.appendChild(td);
+            }
+            tbody.appendChild(tr);
+        });
+    }
+
+    function toggleStatus(cell) {
+        let current = parseInt(cell.dataset.status);
+        let next = (current + 1) % 3;
+        cell.dataset.status = next;
+        
+        updateSummary();
+        saveData(); // 點擊時存檔
+    }
+
+    function updateSubjectName(index, value) {
+        SUBJECTS[index] = value;
+        
+        // 更新左側標題顯示
+        const th = document.getElementById(`subj-header-${index}`);
+        if(th) th.textContent = value;
+
+        updateSummary();
+        saveData(); // 修改文字時存檔
+    }
+
+    function updateSummary() {
+        const tbody = document.getElementById('tableBody');
+        let report = `📅 作業檢查 (${new Date().toLocaleDateString()})\n------------------------\n`;
+        let hasData = false;
+
+        const rows = tbody.querySelectorAll('tr');
+        rows.forEach((row, idx) => {
+            const subjectName = row.querySelector('th').textContent;
+            let missing = [];
+            let uncorrected = [];
+
+            const cells = row.querySelectorAll('td');
+            cells.forEach(cell => {
+                const status = parseInt(cell.dataset.status);
+                const studentId = cell.dataset.student;
+                if (status === 1) missing.push(studentId);
+                if (status === 2) uncorrected.push(studentId);
+            });
+
+            if (missing.length > 0 || uncorrected.length > 0) {
+                hasData = true;
+                report += `【${subjectName}】\n`;
+                if (missing.length > 0) report += `   ❌ 未交：${missing.join(', ')}\n`;
+                if (uncorrected.length > 0) report += `   △ 未訂正：${uncorrected.join(', ')}\n`;
+                report += '\n';
+            }
+        });
+
+        if (!hasData) report += "🎉 全班作業皆已完成！";
+        document.getElementById('summaryText').value = report;
+    }
+
+    // --- 儲存與讀取 (Local Storage) ---
+
+    function saveData() {
+        // 1. 存科目名稱
+        const customNames = [
+            document.getElementById('custom1').value,
+            document.getElementById('custom2').value,
+            document.getElementById('custom3').value
+        ];
+        localStorage.setItem('hw_transposed_customs', JSON.stringify(customNames));
+
+        // 2. 存格子狀態
+        const gridData = [];
+        const rows = document.querySelectorAll('#tableBody tr');
+        rows.forEach(row => {
+            const rowData = [];
+            row.querySelectorAll('td').forEach(cell => {
+                rowData.push(cell.dataset.status);
+            });
+            gridData.push(rowData);
+        });
+        localStorage.setItem('hw_transposed_grid', JSON.stringify(gridData));
+
+        // 顯示存檔提示
+        const msg = document.getElementById('saveMsg');
+        msg.classList.add('show');
+        setTimeout(() => msg.classList.remove('show'), 1000);
+    }
+
+    function loadData() {
+        // 1. 讀取科目
+        const savedHeaders = localStorage.getItem('hw_transposed_customs');
+        if (savedHeaders) {
+            const names = JSON.parse(savedHeaders);
+            document.getElementById('custom1').value = names[0];
+            document.getElementById('custom2').value = names[1];
+            document.getElementById('custom3').value = names[2];
+            
+            // 更新畫面上看到的科目
+            updateSubjectName(4, names[0]);
+            updateSubjectName(5, names[1]);
+            updateSubjectName(6, names[2]);
+        }
+
+        // 2. 讀取格子
+        const savedGrid = localStorage.getItem('hw_transposed_grid');
+        if (savedGrid) {
+            const gridData = JSON.parse(savedGrid);
+            const rows = document.querySelectorAll('#tableBody tr');
+            
+            rows.forEach((row, rIndex) => {
+                if (gridData[rIndex]) {
+                    const cells = row.querySelectorAll('td');
+                    cells.forEach((cell, cIndex) => {
+                        cell.dataset.status = gridData[rIndex][cIndex] || "0";
+                    });
+                }
+            });
+        }
+    }
+
+    function resetNewDay() {
+        if(!confirm('確定要開始新的一天嗎？\n(這會清空所有的「未交/未訂正」記號，但保留自訂科目名稱)')) return;
+        
+        const cells = document.querySelectorAll('td[data-status]');
+        cells.forEach(cell => cell.dataset.status = "0");
+        
+        updateSummary();
+        saveData();
+    }
+
+    function copySummary() {
+        const copyText = document.getElementById("summaryText");
+        copyText.select();
+        copyText.setSelectionRange(0, 99999); 
+        navigator.clipboard.writeText(copyText.value).then(() => {
+            alert("已複製統計內容！");
+        });
+    }
+</script>
+
+</body>
+</html>
