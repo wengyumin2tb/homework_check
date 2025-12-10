@@ -90,12 +90,12 @@
             margin-left: 5px;
         }
 
-        /* 主表格區 - 修改處：高度調整為 40vh */
+        /* 主表格區 - 維持高度 40vh */
         .table-container {
-            height: 40vh; /* 修改：設定為視窗高度的 40% */
-            flex-shrink: 0; /* 禁止壓縮 */
-            overflow-y: auto; /* 僅允許垂直捲動 */
-            overflow-x: hidden; /* 禁止水平捲動 */
+            height: 40vh; 
+            flex-shrink: 0; 
+            overflow-y: auto; 
+            overflow-x: hidden; 
             border: 2px solid #333;
             border-radius: 5px;
             position: relative;
@@ -105,8 +105,8 @@
         table {
             border-collapse: separate;
             border-spacing: 0;
-            width: 100%; /* 強制佔滿寬度 */
-            table-layout: fixed; /* 固定佈局，欄位均分 */
+            width: 100%; 
+            table-layout: fixed; 
         }
 
         th, td {
@@ -199,7 +199,7 @@
         .status-missing { color: var(--danger-color); font-weight: bold; font-size: 1rem; }
         .status-correction { color: var(--warning-color); font-weight: bold; font-size: 1rem; }
 
-        /* 底部功能區塊 - Flex: 1 自動填滿剩餘空間 */
+        /* 底部功能區塊 */
         .notes-container {
             margin-top: 5px;
             flex: 1; 
@@ -223,13 +223,20 @@
             padding-right: 5px;
         }
 
-        /* 右側欄位權重為 1 */
+        /* 右側欄位 - 修改處：改為 Flex column 並增加間距 */
         .notes-right {
             flex: 1;
             display: flex;
             flex-direction: column;
-            justify-content: space-evenly;
             padding-left: 5px;
+            gap: 5px; /* 上下兩列的間距 */
+        }
+        
+        /* 用來包裹上方的值日生與午餐服務選單 */
+        .duty-controls-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
         }
 
         .notes-label {
@@ -252,10 +259,28 @@
             color: #006400;      
             font-size: 14pt;     
             font-weight: bold;  
-            text-align: left; /* 靠左對齊 */
+            text-align: left; 
             width: 100%;
         }
         .notes-textarea:focus { border-color: var(--primary-color); outline: none; }
+        
+        /* 新增：右下角備註欄位樣式 */
+        .duty-textarea {
+            flex: 1; /* 自動填滿剩餘高度 */
+            width: 100%;
+            padding: 5px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            font-family: inherit;
+            font-weight: bold;
+            resize: none;
+            
+            /* 客製化樣式 */
+            font-size: 14pt;
+            color: #00008B; /* 深藍色 */
+        }
+        .duty-textarea:focus { border-color: var(--primary-color); outline: none; }
 
         .duty-row {
             display: flex;
@@ -265,7 +290,6 @@
             color: #444;
         }
         
-        /* 標籤寬度與對齊 */
         .duty-label {
             width: 115px; 
             margin-right: 5px;
@@ -403,22 +427,26 @@
         </div>
         
         <div class="notes-right">
-            <div class="duty-row">
-                <span class="duty-label">①值日生：</span>
-                <select id="duty1" class="duty-select">
-                    <option value="">--</option>
-                </select>
-                <select id="duty2" class="duty-select">
-                    <option value="">--</option>
-                </select>
+            <div class="duty-controls-wrapper">
+                <div class="duty-row">
+                    <span class="duty-label">①值日生：</span>
+                    <select id="duty1" class="duty-select">
+                        <option value="">--</option>
+                    </select>
+                    <select id="duty2" class="duty-select">
+                        <option value="">--</option>
+                    </select>
+                </div>
+                
+                <div class="duty-row">
+                    <span class="duty-label">②午餐服務：</span>
+                    <select id="lunchService" class="duty-select">
+                        <option value="">--</option>
+                    </select>
+                </div>
             </div>
             
-            <div class="duty-row">
-                <span class="duty-label">②午餐服務：</span>
-                <select id="lunchService" class="duty-select">
-                    <option value="">--</option>
-                </select>
-            </div>
+            <textarea id="dutyNote" class="duty-textarea" placeholder="備註..."></textarea>
         </div>
     </div>
 
@@ -494,6 +522,11 @@
                 document.getElementById(id).addEventListener('change', (e) => {
                     saveField(id, e.target.value);
                 });
+            });
+
+            // 監聽新的備註欄位
+            document.getElementById('dutyNote').addEventListener('input', (e) => {
+                saveField('dutyNote', e.target.value);
             });
         });
 
@@ -715,7 +748,10 @@
             document.getElementById('duty2').value = currentDayData['duty2'] || '';
             document.getElementById('lunchService').value = currentDayData['lunchService'] || '';
 
-            // 5. 更新底部摘要
+            // 5. 還原右下角備註
+            document.getElementById('dutyNote').value = currentDayData['dutyNote'] || '';
+
+            // 6. 更新底部摘要
             updateSummary();
             updateHistorySummary();
             updateIndividualSummary();
@@ -770,7 +806,7 @@
             Object.values(homeworkData).forEach(dayData => {
                 if (typeof dayData !== 'object' || dayData === null) return; 
                 Object.entries(dayData).forEach(([key, status]) => {
-                    if (['note', 'duty1', 'duty2', 'lunchService'].includes(key)) return; 
+                    if (['note', 'duty1', 'duty2', 'lunchService', 'dutyNote'].includes(key)) return; 
                     const parts = key.split('-');
                     if (parts.length !== 2) return;
                     const stuIdx = parseInt(parts[0]);
@@ -845,7 +881,7 @@
                 const simpleDate = `${parts[1]}/${parts[2]}`;
 
                 Object.entries(dayData).forEach(([key, status]) => {
-                    if (['note', 'duty1', 'duty2', 'lunchService'].includes(key)) return;
+                    if (['note', 'duty1', 'duty2', 'lunchService', 'dutyNote'].includes(key)) return;
                     
                     const kParts = key.split('-');
                     if (kParts.length === 2) {
@@ -910,7 +946,7 @@
                 const simpleDate = `${parts[1]}/${parts[2]}`;
 
                 Object.entries(dayData).forEach(([key, status]) => {
-                    if (['note', 'duty1', 'duty2', 'lunchService'].includes(key)) return;
+                    if (['note', 'duty1', 'duty2', 'lunchService', 'dutyNote'].includes(key)) return;
                     const kParts = key.split('-');
                     if (kParts.length === 2) {
                         const stuIdx = parseInt(kParts[0]);
