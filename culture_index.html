@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>藝文・散策 | 全臺活動快搜 (純文字版)</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500&family=Noto+Serif+TC:wght@500;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-color: #f9f7f2;       /* 米白紙張色 */
+            --text-main: #2c2c2c;      /* 深炭灰 */
+            --accent-color: #9e4a3b;   /* 赤陶色 */
+            --secondary-color: #7d7d7d;/* 次要灰 */
+            --card-bg: #ffffff;
+            --border-radius: 4px;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            font-family: 'Noto Sans TC', sans-serif;
+            color: var(--text-main);
+            line-height: 1.6;
+        }
+
+        h1, h2, h3, h4, h5, .serif-font {
+            font-family: 'Noto Serif TC', serif;
+        }
+
+        /* --- Hero Section (改為純色) --- */
+        .hero-section {
+            background-color: var(--accent-color); /* 純色背景 */
+            color: #fff;
+            padding: 60px 0;
+            margin-bottom: 40px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        
+        .hero-title {
+            font-size: 2.5rem;
+            letter-spacing: 0.15em;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        .hero-subtitle {
+            font-weight: 300;
+            letter-spacing: 0.1em;
+            font-size: 1rem;
+            opacity: 0.9;
+            font-family: 'Noto Serif TC', serif;
+            border-top: 1px solid rgba(255,255,255,0.4);
+            display: inline-block;
+            padding-top: 10px;
+            margin-top: 5px;
+        }
+
+        /* --- Search Box --- */
+        .search-box {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+            border: 1px solid rgba(0,0,0,0.05);
+            margin-bottom: 30px;
+        }
+
+        .form-label {
+            font-size: 0.9rem;
+            color: var(--secondary-color);
+            font-weight: 500;
+        }
+
+        .form-control, .form-select {
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            padding: 8px 12px;
+            font-size: 0.95rem;
+            background-color: #fff;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 0.2rem rgba(158, 74, 59, 0.15);
+        }
+
+        /* --- Buttons --- */
+        .btn-mode {
+            border: 1px solid #ddd;
+            color: var(--secondary-color);
+            background: transparent;
+            border-radius: var(--border-radius);
+            padding: 4px 12px;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-mode:hover, .btn-mode.active {
+            background-color: var(--text-main);
+            color: #fff;
+            border-color: var(--text-main);
+        }
+
+        .btn-outline-primary {
+            color: var(--accent-color);
+            border-color: var(--accent-color);
+        }
+        
+        .btn-outline-primary:hover {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+            color: #fff;
+        }
+
+        /* --- Cards Common (純文字樣式) --- */
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid #eee; /* 增加細微邊框 */
+            border-left: 4px solid var(--accent-color); /* 左側色條強調 */
+            border-radius: var(--border-radius);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            height: 100%;
+        }
+
+        .card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.05);
+            border-color: #ddd;
+        }
+
+        .card-body {
+            padding: 1.5rem;
+        }
+
+        .card-title {
+            color: var(--text-main);
+            font-weight: 700;
+            line-height: 1.4;
+            margin-bottom: 1rem;
+            font-size: 1.25rem;
+        }
+
+        /* 日期標籤 */
+        .date-tag {
+            font-family: 'Noto Serif TC', serif;
+            color: var(--accent-color);
+            font-weight: bold;
+            font-size: 1.1rem;
+            letter-spacing: 0.05em;
+            display: inline-block;
+            margin-right: 10px;
+        }
+
+        /* 類別標籤 */
+        .category-badge {
+            font-size: 0.8rem;
+            padding: 2px 8px;
+            background-color: #f0f0f0;
+            color: #666;
+            border-radius: 4px;
+            vertical-align: text-bottom;
+        }
+
+        /* Loading */
+        #loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+            color: var(--secondary-color);
+        }
+        
+        footer {
+            background-color: #fff;
+            border-top: 1px solid #eee;
+            font-size: 0.85rem;
+            letter-spacing: 0.1em;
+            padding: 30px 0;
+            margin-top: 60px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="hero-section text-center">
+        <div class="container">
+            <h1 class="hero-title">藝文・散策</h1>
+            <div class="hero-subtitle">Culture & Arts Events in Taiwan</div>
+        </div>
+    </div>
+
+    <div class="container" style="min-height: 80vh;">
+        <div class="search-box">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label for="categorySelect" class="form-label">選擇類別</label>
+                    <select id="categorySelect" class="form-select">
+                        <option value="17" selected>演唱會 Concerts</option>
+                        <option value="all" style="font-weight: bold; color: var(--accent-color);">✦ 綜合搜尋 All</option>
+                        <option value="6">展覽 Exhibitions</option>
+                        <option value="1">音樂 Music</option>
+                        <option value="2">戲劇 Drama</option>
+                        <option value="4">親子 Family</option>
+                        <option value="3">舞蹈 Dance</option>
+                        <option value="7">講座 Lectures</option>
+                        <option value="8">電影 Film</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="nameInput" class="form-label">關鍵字</label>
+                    <input type="text" class="form-control" id="nameInput" placeholder="活動名稱...">
+                </div>
+                <div class="col-md-3">
+                    <label for="locationInput" class="form-label">地點</label>
+                    <input type="text" class="form-control" id="locationInput" placeholder="城市或場館...">
+                </div>
+                
+                <div class="col-md-2 text-end">
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-mode" id="btnGrid" onclick="switchView('grid')">
+                            <i class="bi bi-grid"></i> 卡片
+                        </button>
+                        <button type="button" class="btn btn-mode active" id="btnList" onclick="switchView('list')">
+                            <i class="bi bi-list-ul"></i> 列表
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div id="resultCount" class="serif-font text-muted">資料讀取中...</div>
+        </div>
+
+        <div id="loading">
+            <div class="spinner-border" style="color: var(--accent-color);" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-3 serif-font" id="loadingText">正在搜尋資料...</p>
+        </div>
+
+        <div class="row g-3" id="eventsContainer">
+            </div>
+    </div>
+
+    <footer class="text-center">
+        <p class="mb-1 serif-font">Designed for Arts Lovers.</p>
+        <p class="text-muted">資料來源：文化部開放資料服務網</p>
+    </footer>
+
+    <script>
+        let currentData = [];
+        let viewMode = 'list'; // 預設列表模式
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchData();
+            
+            document.getElementById('categorySelect').addEventListener('change', fetchData);
+            document.getElementById('nameInput').addEventListener('input', filterAndRender);
+            document.getElementById('locationInput').addEventListener('input', filterAndRender);
+        });
+
+        function switchView(mode) {
+            viewMode = mode;
+            const btnGrid = document.getElementById('btnGrid');
+            const btnList = document.getElementById('btnList');
+            
+            if (mode === 'grid') {
+                btnGrid.classList.add('active');
+                btnList.classList.remove('active');
+            } else {
+                btnGrid.classList.remove('active');
+                btnList.classList.add('active');
+            }
+            filterAndRender();
+        }
+
+        async function fetchData() {
+            const categorySelect = document.getElementById('categorySelect');
+            const categoryId = categorySelect.value;
+            const container = document.getElementById('eventsContainer');
+            const loading = document.getElementById('loading');
+            const loadingText = document.getElementById('loadingText');
+            const resultCount = document.getElementById('resultCount');
+            
+            loading.style.display = 'block';
+            container.innerHTML = '';
+            
+            if (categoryId === 'all') {
+                loadingText.innerText = "資料量較大，請稍候...";
+                resultCount.innerText = '全站搜尋中...';
+            } else {
+                loadingText.innerText = "正在讀取資料...";
+                resultCount.innerText = '更新中...';
+            }
+
+            try {
+                let rawData = [];
+
+                if (categoryId === 'all') {
+                    const categoriesToFetch = ['17', '6', '1', '2', '4'];
+                    const promises = categoriesToFetch.map(id => 
+                        fetch(`https://cloud.culture.tw/frontsite/trans/SearchShowAction.do?method=doFindTypeJ&category=${id}`)
+                        .then(res => res.json())
+                        .catch(err => [])
+                    );
+                    const results = await Promise.all(promises);
+                    rawData = results.flat();
+                } else {
+                    const apiUrl = `https://cloud.culture.tw/frontsite/trans/SearchShowAction.do?method=doFindTypeJ&category=${categoryId}`;
+                    const response = await fetch(apiUrl);
+                    if (!response.ok) throw new Error('網路錯誤');
+                    rawData = await response.json();
+                }
+                
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const todayTimestamp = today.getTime();
+
+                currentData = rawData.map(event => {
+                    let startTime = "";
+                    let location = "";
+                    
+                    if (event.showInfo && event.showInfo.length > 0) {
+                        startTime = event.showInfo[0].time; 
+                        location = event.showInfo.map(info => info.location + " " + info.locationName).join(" ");
+                    }
+
+                    return {
+                        ...event,
+                        sortTime: new Date(startTime).getTime(),
+                        displayTime: startTime,
+                        showLocation: (event.showInfo && event.showInfo.length > 0) ? (event.showInfo[0].locationName || event.showInfo[0].location) : "詳見內頁",
+                        fullLocation: location
+                    };
+                });
+
+                currentData = currentData.filter(e => {
+                    return !isNaN(e.sortTime) && e.sortTime >= todayTimestamp;
+                });
+
+                currentData.sort((a, b) => a.sortTime - b.sortTime);
+
+                filterAndRender();
+
+            } catch (error) {
+                console.error(error);
+                container.innerHTML = `<div class="alert alert-light text-center w-100 py-5">讀取資料時發生狀況：${error.message}</div>`;
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        function filterAndRender() {
+            const nameKeyword = document.getElementById('nameInput').value.toLowerCase();
+            const locationKeyword = document.getElementById('locationInput').value.toLowerCase();
+            
+            const filteredData = currentData.filter(event => {
+                return event.title.toLowerCase().includes(nameKeyword) && 
+                       event.fullLocation.toLowerCase().includes(locationKeyword);
+            });
+
+            renderCards(filteredData);
+        }
+
+        function renderCards(data) {
+            const container = document.getElementById('eventsContainer');
+            const resultCount = document.getElementById('resultCount');
+            const categorySelect = document.getElementById('categorySelect');
+            
+            container.innerHTML = '';
+            
+            const categoryText = categorySelect.options[categorySelect.selectedIndex].text;
+            resultCount.innerText = `${categoryText}：共 ${data.length} 筆未來活動`;
+
+            if (data.length === 0) {
+                container.innerHTML = `
+                    <div class="col-12 text-center text-muted py-5">
+                        <i class="bi bi-calendar-x" style="font-size: 2rem;"></i>
+                        <p class="mt-3">目前沒有符合條件的未來活動</p>
+                    </div>`;
+                return;
+            }
+
+            const displayData = data.slice(0, 100); 
+
+            displayData.forEach(event => {
+                // 移除圖片相關變數與處理
+                const col = document.createElement('div');
+                const dateStr = event.displayTime.split(' ')[0].replace(/\//g, '.'); 
+                
+                if (viewMode === 'grid') {
+                    // --- 方格模式 (純文字) ---
+                    col.className = 'col-12 col-md-6 col-lg-4';
+                    col.innerHTML = `
+                        <div class="card h-100">
+                            <div class="card-body d-flex flex-column">
+                                <div class="mb-2">
+                                    <span class="date-tag">${dateStr}</span>
+                                    <span class="category-badge">${event.programTypeName || '活動'}</span>
+                                </div>
+                                <h5 class="card-title">${event.title}</h5>
+                                <p class="card-text small text-muted mb-4 flex-grow-1">
+                                    <i class="bi bi-geo-alt"></i> ${event.showLocation}
+                                </p>
+                                <a href="${event.sourceWebPromote || '#'}" target="_blank" class="btn btn-outline-primary btn-sm w-100 rounded-0">
+                                    查看詳情
+                                </a>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // --- 條列模式 (純文字) ---
+                    col.className = 'col-12';
+                    col.innerHTML = `
+                        <div class="card">
+                            <div class="card-body d-flex flex-column flex-md-row align-items-md-center justify-content-between">
+                                <div class="flex-grow-1 pe-md-3 mb-3 mb-md-0">
+                                    <div class="mb-1">
+                                        <span class="date-tag" style="font-size:1rem;">${dateStr}</span>
+                                        <span class="category-badge">${event.programTypeName || '活動'}</span>
+                                    </div>
+                                    <h5 class="card-title mb-1" style="font-size: 1.1rem;">${event.title}</h5>
+                                    <div class="text-muted small"><i class="bi bi-geo-alt"></i> ${event.showLocation}</div>
+                                </div>
+                                <div style="min-width: 120px;">
+                                    <a href="${event.sourceWebPromote || '#'}" target="_blank" class="btn btn-outline-primary btn-sm w-100 rounded-0">
+                                        查看詳情 <i class="bi bi-arrow-right"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                container.appendChild(col);
+            });
+            
+            if (data.length > 100) {
+                 const moreInfo = document.createElement('div');
+                 moreInfo.className = "col-12 text-center text-muted mt-3 serif-font";
+                 moreInfo.innerText = `... 還有 ${data.length - 100} 筆資料 ...`;
+                 container.appendChild(moreInfo);
+            }
+        }
+    </script>
+</body>
+</html>
