@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>藝文・散策 | 進階活動快搜</title>
+    <title>藝文・散策 | 整合快搜平台</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
@@ -20,6 +20,7 @@
             --secondary-color: #7d7d7d;/* 次要灰 */
             --card-bg: #ffffff;
             --border-radius: 4px;
+            --tkcc-color: #2c7da0;     /* 台江文化中心代表色 */
         }
 
         body {
@@ -38,8 +39,9 @@
             background-color: var(--accent-color);
             color: #fff;
             padding: 60px 0;
-            margin-bottom: 40px;
+            margin-bottom: 30px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            position: relative;
         }
         
         .hero-title {
@@ -59,6 +61,51 @@
             display: inline-block;
             padding-top: 10px;
             margin-top: 5px;
+        }
+
+        /* --- External Source Badge (台江文化中心) --- */
+        .external-source-bar {
+            background-color: #fff;
+            border-left: 5px solid var(--tkcc-color);
+            padding: 15px 20px;
+            margin-bottom: 30px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .external-title {
+            color: var(--tkcc-color);
+            font-weight: 700;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .external-btn {
+            background-color: var(--tkcc-color);
+            color: white;
+            border: none;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            text-decoration: none;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .external-btn:hover {
+            background-color: #1a5b78;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(44, 125, 160, 0.3);
         }
 
         /* --- Search Box --- */
@@ -98,7 +145,7 @@
             border-top: 1px solid #eee;
             margin-top: 20px;
             padding-top: 20px;
-            display: none; /* 預設隱藏 */
+            display: none;
         }
         
         .advanced-panel.show {
@@ -121,7 +168,6 @@
             display: inline-block;
         }
 
-        /* Custom Checkbox Style */
         .form-check-input:checked {
             background-color: var(--accent-color);
             border-color: var(--accent-color);
@@ -148,17 +194,6 @@
             background-color: var(--text-main);
             color: #fff;
             border-color: var(--text-main);
-        }
-
-        .btn-outline-primary {
-            color: var(--accent-color);
-            border-color: var(--accent-color);
-        }
-        
-        .btn-outline-primary:hover {
-            background-color: var(--accent-color);
-            border-color: var(--accent-color);
-            color: #fff;
         }
 
         /* --- Cards --- */
@@ -205,7 +240,6 @@
             vertical-align: text-bottom;
         }
 
-        /* Loading */
         #loading {
             display: none;
             text-align: center;
@@ -233,6 +267,18 @@
     </div>
 
     <div class="container" style="min-height: 80vh;">
+        
+        <div class="external-source-bar">
+            <div class="external-title">
+                <i class="bi bi-geo-alt-fill"></i> 在地藝文特搜：台江文化中心
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <a href="https://tkcc.tnc.gov.tw/ActivityInfoListC002100.aspx?appname=ActivityInfoListC002100" target="_blank" class="external-btn">
+                    前往官網查看列表 <i class="bi bi-box-arrow-up-right"></i>
+                </a>
+            </div>
+        </div>
+
         <div class="search-box">
             <div class="row g-3 align-items-end">
                 <div class="col-md-3" id="basicCategoryWrapper">
@@ -291,7 +337,6 @@
                             <div class="form-check"><input class="form-check-input cat-check" type="checkbox" value="8" id="c8"><label class="form-check-label" for="c8">電影</label></div>
                             <div class="form-check"><input class="form-check-input cat-check" type="checkbox" value="15" id="c15"><label class="form-check-label" for="c15">其他</label></div>
                         </div>
-                        <div class="text-muted small mt-2"><i class="bi bi-info-circle"></i> 勾選多個類別將同時搜尋。</div>
                     </div>
 
                     <div class="col-md-12">
@@ -343,7 +388,7 @@
 
     <footer class="text-center">
         <p class="mb-1 serif-font">Designed for Arts Lovers.</p>
-        <p class="text-muted">資料來源：文化部開放資料服務網</p>
+        <p class="text-muted">資料來源：文化部開放資料服務網 & 台江文化中心</p>
     </footer>
 
     <script>
@@ -357,9 +402,8 @@
             // Event Listeners
             document.getElementById('categorySelect').addEventListener('change', fetchData);
             document.getElementById('nameInput').addEventListener('input', filterAndRender);
-            document.getElementById('locationInput').addEventListener('input', filterAndRender); // 監聽地點輸入框
+            document.getElementById('locationInput').addEventListener('input', filterAndRender); 
             
-            // 地點 Checkbox 變更時，觸發篩選
             document.querySelectorAll('.loc-check').forEach(chk => {
                 chk.addEventListener('change', filterAndRender);
             });
@@ -443,7 +487,6 @@
                 const results = await Promise.all(promises);
                 let rawData = results.flat(); 
                 
-                // 去重
                 const uniqueEvents = new Map();
                 rawData.forEach(item => {
                     if(!uniqueEvents.has(item.UID)) {
@@ -491,14 +534,10 @@
         }
 
         function filterAndRender() {
-            // 1. 取得關鍵字
             const nameInput = document.getElementById('nameInput').value.trim().toLowerCase();
             const keywords = nameInput.split(/\s+/).filter(k => k.length > 0);
-            
-            // 2. 取得地點文字輸入
             const locationInput = document.getElementById('locationInput').value.trim().toLowerCase();
 
-            // 3. 取得進階地點勾選
             let selectedLocations = [];
             if (isAdvancedMode) {
                 document.querySelectorAll('.loc-check:checked').forEach(cb => selectedLocations.push(cb.value));
@@ -508,19 +547,14 @@
                 const title = event.title.toLowerCase();
                 const location = event.fullLocation.toLowerCase();
 
-                // A. 關鍵字比對
                 const isTitleMatch = keywords.every(kw => title.includes(kw));
-                
-                // B. 地點文字框比對 (如果輸入了 "美術館"，地點字串必須包含它)
                 const isLocationTextMatch = location.includes(locationInput);
 
-                // C. 進階地點 Checkbox 比對 (如果勾選了 "臺南"，地點必須包含 "臺南")
                 let isAdvancedLocationMatch = true;
                 if (isAdvancedMode && selectedLocations.length > 0) {
                     isAdvancedLocationMatch = selectedLocations.some(city => location.includes(city));
                 }
 
-                // 三者條件需同時滿足 (AND)
                 return isTitleMatch && isLocationTextMatch && isAdvancedLocationMatch;
             });
 
