@@ -221,7 +221,7 @@
         .notes-label {
             font-weight: bold;
             margin-bottom: 5px;
-            font-size: 14pt;
+            font-size: 16pt;
             color: #333;
             text-align: center;          
             padding: 5px;
@@ -238,7 +238,7 @@
             resize: none; 
             font-family: inherit;
             color: #006400;      
-            font-size: 16.5pt;     
+            font-size: 17pt;     
             font-weight: bold;  
             line-height: 1.5;
             text-align: left; 
@@ -336,14 +336,14 @@
 
     <div class="news-container">
         <div class="news-header">
-            <span>🌱🎓 生態與教育新聞</span>
+            <span>🌱🎓 生態與教育新聞（國內外）</span>
             <div style="margin-left: auto; display: flex; gap: 8px; align-items: center;">
-                <button onclick="fetchDailyNews()" style="background:white; border:none; padding:4px 10px; border-radius:15px; cursor:pointer; font-size:0.77rem; color:#4a90e2; font-weight:bold; box-shadow: 0 1px 2px rgba(0,0,0,0.1); transition: 0.2s;">更新新聞 ↻</button>
+                <button id="refreshNewsBtn" onclick="fetchDailyNews()" style="background:white; border:none; padding:4px 10px; border-radius:15px; cursor:pointer; font-size:0.77rem; color:#4a90e2; font-weight:bold; box-shadow: 0 1px 2px rgba(0,0,0,0.1); transition: 0.2s;">更新新聞 ↻</button>
             </div>
         </div>
         <div class="news-list" id="newsList">
             <div style="grid-column: span 2; text-align: center; padding: 20px; color: #666; font-weight:bold;">
-                📰 正在自動為您搜尋今日生態與教育新聞...
+                📰 正在自動為您搜尋今日國內外生態與教育新聞...
             </div>
         </div>
     </div>
@@ -572,21 +572,29 @@
 
         async function fetchDailyNews() {
             const newsList = document.getElementById('newsList');
+            const refreshBtn = document.getElementById('refreshNewsBtn');
             if (!newsList) return;
 
+            // 立即顯示按鈕更新狀態
+            if (refreshBtn) {
+                refreshBtn.disabled = true;
+                refreshBtn.textContent = '更新中... ↻';
+                refreshBtn.style.opacity = '0.7';
+            }
+
             newsList.innerHTML = `<div style="grid-column: span 2; text-align: center; padding: 20px; color: #666; font-weight:bold;">
-                📰 正在搜尋今日生態與教育新聞...
+                📰 正在即時連線抓取最新國內外生態與教育新聞...
             </div>`;
 
             const tags = [
-                { class: 'tag-intl', label: '生態' },
+                { class: 'tag-intl', label: '國際' },
                 { class: 'tag-sci', label: '教育' },
-                { class: 'tag-local', label: '環境' },
-                { class: 'tag-sci', label: '校園' }
+                { class: 'tag-local', label: '國內' },
+                { class: 'tag-sci', label: '生態' }
             ];
 
             function filterArticles(articles) {
-                // 1. 先排除包含社會新聞/犯罪事件/特定關鍵字
+                // 1. 排除社會新聞/負面新聞/特定關鍵字
                 const cleanArticles = articles.filter(item => {
                     const content = (item.title || '') + (item.summary || item.description || '');
                     return !EXCLUDE_KEYWORDS.some(kw => content.includes(kw));
@@ -599,39 +607,42 @@
                 });
 
                 const seenTitles = new Set();
-                const finalArticles = [];
+                let pool = [];
 
                 // 優先加入符合生態教育主題的新聞
                 for (const item of envEduArticles) {
                     if (item.title && !seenTitles.has(item.title)) {
                         seenTitles.add(item.title);
-                        finalArticles.push(item);
+                        pool.push(item);
                     }
                 }
 
-                // 3. 若不足 4 則，從其他非社會類生活新聞補充
-                if (finalArticles.length < 4) {
+                // 3. 若符合主題新聞數量充裕，隨機打亂以讓每次點擊都有新鮮感
+                pool.sort(() => Math.random() - 0.5);
+
+                // 4. 若不足 4 則，從其他非社會類新聞補充
+                if (pool.length < 4) {
                     for (const item of cleanArticles) {
                         if (item.title && !seenTitles.has(item.title)) {
                             seenTitles.add(item.title);
-                            finalArticles.push(item);
-                            if (finalArticles.length >= 4) break;
+                            pool.push(item);
+                            if (pool.length >= 4) break;
                         }
                     }
                 }
 
-                // 4. 若總數仍不足 4 則，使用預設優質新聞題庫補足至 4 則
-                if (finalArticles.length < 4) {
+                // 5. 若總數仍不足 4 則，使用預設優質新聞題庫補足
+                if (pool.length < 4) {
                     for (const item of fallbackArticles) {
                         if (!seenTitles.has(item.title)) {
                             seenTitles.add(item.title);
-                            finalArticles.push(item);
-                            if (finalArticles.length >= 4) break;
+                            pool.push(item);
+                            if (pool.length >= 4) break;
                         }
                     }
                 }
 
-                return finalArticles.slice(0, 4);
+                return pool.slice(0, 4);
             }
 
             function renderNewsCards(articles) {
@@ -660,9 +671,15 @@
                     `;
                     newsList.insertAdjacentHTML('beforeend', cardHtml);
                 });
+
+                if (refreshBtn) {
+                    refreshBtn.disabled = false;
+                    refreshBtn.textContent = '更新新聞 ↻';
+                    refreshBtn.style.opacity = '1';
+                }
             }
 
-            // 預備備援新聞 (限定生態、環境與教育主題)
+            // 預備備援新聞 (包含國內與國際主題)
             const fallbackArticles = [
                 {
                     title: "全國科展與永續教育成果展登場 引導學生關心在地生態",
@@ -670,8 +687,8 @@
                     link: "https://news.ltn.com.tw"
                 },
                 {
-                    title: "台灣海底發現全球首件現生革龜化石 補上演化拼圖",
-                    summary: "國立台灣大學團隊研究指出，現存體型最大海龜革龜的化石極為罕見，此發現對海洋生物保育與演化深具意義。",
+                    title: "聯合國氣候高峰會聚焦青年教育 提倡全球校園減碳行動",
+                    summary: "國際環保組織號召各國學校參與海洋與森林保育行動，共同打造永續發展的下一代。",
                     link: "https://news.ltn.com.tw"
                 },
                 {
@@ -686,71 +703,61 @@
                 }
             ];
 
-            const rssTarget = 'https://news.ltn.com.tw/rss/life.xml';
-            
-            // 策略 1: 使用 rss2json API 服務
+            // 涵蓋國內即時、國際與生活新聞 RSS 來源
+            const rssTargets = [
+                'https://news.ltn.com.tw/rss/all.xml',
+                'https://news.ltn.com.tw/rss/world.xml',
+                'https://news.ltn.com.tw/rss/life.xml'
+            ];
+
+            // 加入動態時間戳記破除代理與瀏覽器快取 (Cache-Busting)
+            const timestamp = Date.now();
+            let allItems = [];
+
+            // 策略 1: 透過 rss2json 線上 API 即時抓取
             try {
-                const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssTarget)}`);
+                const targetUrl = rssTargets[timestamp % rssTargets.length]; // 隨機輪替不同 RSS 頻道確保豐富度
+                const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(targetUrl)}&_t=${timestamp}`);
                 if (res.ok) {
                     const data = await res.json();
                     if (data.status === 'ok' && data.items && data.items.length > 0) {
-                        const items = data.items.map(item => ({
+                        allItems = data.items.map(item => ({
                             title: item.title,
                             summary: item.description,
                             link: item.link
                         }));
-                        renderNewsCards(items);
-                        return;
                     }
                 }
             } catch (e) {
-                console.warn('新聞抓取策略 1 (rss2json) 失敗:', e);
+                console.warn('新聞抓取策略 1 失敗:', e);
             }
 
-            // 策略 2: 使用 corsproxy.io 代理
-            try {
-                const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(rssTarget)}`);
-                if (res.ok) {
-                    const text = await res.text();
-                    const xmlDoc = new DOMParser().parseFromString(text, "text/xml");
-                    const items = Array.from(xmlDoc.querySelectorAll("item")).map(item => ({
-                        title: item.querySelector("title")?.textContent,
-                        summary: item.querySelector("description")?.textContent,
-                        link: item.querySelector("link")?.textContent
-                    }));
-                    if (items.length > 0) {
-                        renderNewsCards(items);
-                        return;
-                    }
-                }
-            } catch (e) {
-                console.warn('新聞抓取策略 2 (corsproxy) 失敗:', e);
-            }
-
-            // 策略 3: 使用 allorigins 代理
-            try {
-                const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(rssTarget)}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.contents) {
-                        const xmlDoc = new DOMParser().parseFromString(data.contents, "text/xml");
-                        const items = Array.from(xmlDoc.querySelectorAll("item")).map(item => ({
-                            title: item.querySelector("title")?.textContent,
-                            summary: item.querySelector("description")?.textContent,
-                            link: item.querySelector("link")?.textContent
-                        }));
-                        if (items.length > 0) {
-                            renderNewsCards(items);
-                            return;
+            // 策略 2: 若策略 1 條目不夠，使用 corsproxy.io 即時代理抓取全頻道新聞
+            if (allItems.length < 4) {
+                try {
+                    for (const rss of rssTargets) {
+                        const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(rss)}?_t=${timestamp}`);
+                        if (res.ok) {
+                            const text = await res.text();
+                            const xmlDoc = new DOMParser().parseFromString(text, "text/xml");
+                            const fetchedItems = Array.from(xmlDoc.querySelectorAll("item")).map(item => ({
+                                title: item.querySelector("title")?.textContent,
+                                summary: item.querySelector("description")?.textContent,
+                                link: item.querySelector("link")?.textContent
+                            }));
+                            allItems = allItems.concat(fetchedItems);
                         }
                     }
+                } catch (e) {
+                    console.warn('新聞抓取策略 2 失敗:', e);
                 }
-            } catch (e) {
-                console.warn('新聞抓取策略 3 (allorigins) 失敗:', e);
             }
 
-            // 若所有網路代理皆無法連線，顯示備援新聞資料
-            renderNewsCards(fallbackArticles);
+            if (allItems.length > 0) {
+                renderNewsCards(allItems);
+            } else {
+                renderNewsCards(fallbackArticles);
+            }
         }
     </script>
 </body>
