@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>【六年丙班】訊息公告欄</title>
+    <style>
+        :root {
+            --primary-color: #4a90e2;
+            --header-bg: #f8f9fa;
+            --border-color: #dee2e6;
+            --danger-color: #dc3545;
+            --warning-color: #fd7e14;
+        }
+
+        body {
+            font-family: "Microsoft JhengHei", Arial, sans-serif;
+            margin: 0;
+            padding: 5px;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
+            background-color: #f4f6f8;
+            overflow: hidden; /* 禁止整個頁面捲動 */
+        }
+
+        /* 標題區塊 */
+        header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 5px;
+            position: relative;
+            flex-shrink: 0;
+            height: 45px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.3rem;
+            color: #333;
+            text-align: center;
+            white-space: nowrap; 
+        }
+
+        .controls {
+            position: absolute;
+            right: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .date-picker {
+            padding: 4px;
+            font-size: 0.95rem;
+            width: 130px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        
+        #syncStatus {
+            font-size: 0.8rem;
+            color: #666;
+            white-space: nowrap;
+        }
+
+        /* 玉米 SVG */
+        .corn-icon {
+            width: 30px;
+            height: 30px;
+            margin-right: 5px;
+            margin-left: 5px;
+        }
+
+        /* --- 當日新聞區塊樣式 (改為 50vh) --- */
+        .news-container {
+            height: 50vh; /* 設定為佔據全畫面 50% 的高度 */
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            background: #fff;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .news-header {
+            background-color: #4a90e2;
+            color: white;
+            padding: 8px 15px;
+            font-weight: bold;
+            font-size: 1.02rem;
+            display: flex;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .news-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            display: grid; 
+            grid-template-columns: 1fr 1fr; /* 分割為左右兩等份的欄位 */
+            gap: 10px;
+            align-content: start; 
+        }
+
+        .news-card {
+            display: flex;
+            align-items: center;
+            background: #fff;
+            padding: 12px 15px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            text-decoration: none;
+            color: inherit;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            transition: all 0.2s ease;
+        }
+
+        .news-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+            border-color: var(--primary-color);
+        }
+
+        .news-tag {
+            padding: 4px 10px;
+            border-radius: 20px;
+            color: white;
+            font-size: 0.77rem;
+            font-weight: bold;
+            margin-right: 15px;
+            flex-shrink: 0;
+            width: 50px;
+            text-align: center;
+        }
+
+        .tag-intl { background-color: #e83e8c; }
+        .tag-sci  { background-color: #6f42c1; }
+        .tag-local{ background-color: #20c997; }
+
+        .news-content {
+            flex-grow: 1;
+        }
+
+        .news-title {
+            font-size: 1.07rem;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .news-summary {
+            font-size: 0.87rem;
+            color: #666;
+            line-height: 1.4;
+        }
+
+        .news-action {
+            font-size: 0.87rem;
+            color: var(--primary-color);
+            font-weight: bold;
+            white-space: nowrap;
+            margin-left: 15px;
+            background: #f0f7ff;
+            padding: 6px 12px;
+            border-radius: 15px;
+        }
+        
+        .news-card:hover .news-action {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        /* 底部功能區塊 (班級聯絡簿，自動填滿剩下的 50% 空間) */
+        .notes-container {
+            flex: 1; 
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: row; 
+            gap: 10px;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            padding: 10px;
+            box-sizing: border-box;
+            background: #fff;
+        }
+
+        /* 左側欄位權重為 2 */
+        .notes-left {
+            flex: 2; 
+            display: flex;
+            flex-direction: column;
+            border-right: 1px dashed #ccc;
+            padding-right: 10px;
+        }
+
+        /* 右側欄位權重為 1 */
+        .notes-right {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding-left: 5px;
+            gap: 8px; 
+        }
+        
+        .duty-controls-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        /* 修改：把「今天注意事項」文字大小設定為 16pt */
+        .notes-label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 14pt;
+            color: #333;
+            text-align: center;          
+            padding: 5px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+
+        .notes-textarea {
+            flex: 1;
+            padding: 10px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            resize: none; 
+            font-family: inherit;
+            color: #006400;      
+            font-size: 16.5pt;     
+            font-weight: bold;  
+            line-height: 1.5;
+            text-align: left; 
+            width: 100%;
+        }
+        .notes-textarea:focus { border-color: var(--primary-color); outline: none; box-shadow: 0 0 0 2px rgba(74,144,226,0.2); }
+        
+        /* 修改：把「備註欄」文字大小設定為 20pt */
+        .duty-textarea {
+            flex: 1; 
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-family: inherit;
+            font-weight: bold;
+            resize: none;
+            font-size: 19pt;
+            color: #333;
+        }
+        .duty-textarea:focus { border-color: var(--primary-color); outline: none; }
+
+        .duty-row {
+            display: flex;
+            align-items: center;
+            font-size: 0.95rem;
+            font-weight: bold;
+            color: #444;
+        }
+        
+        .duty-label {
+            width: 90px; 
+            margin-right: 5px;
+            text-align: right; 
+        }
+        
+        .duty-select {
+            padding: 4px;
+            margin-right: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 1rem;
+            flex: 1;
+        }
+
+        /* Loading */
+        #loadingOverlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.8);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 1000; font-size: 1.5rem; color: #333; display: none; 
+            backdrop-filter: blur(2px);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loadingOverlay">資料同步中...</div>
+
+    <header>
+        <svg class="corn-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <path d="M50 95 Q20 80 10 40 Q30 90 50 95 Z" fill="#76c043" stroke="#5da035" stroke-width="2"/>
+            <path d="M50 95 Q80 80 90 40 Q70 90 50 95 Z" fill="#76c043" stroke="#5da035" stroke-width="2"/>
+            <ellipse cx="50" cy="45" rx="25" ry="40" fill="#fcd116" stroke="#f4b400" stroke-width="2"/>
+            <path d="M35 25 Q50 20 65 25" fill="none" stroke="#f4b400" stroke-width="2" opacity="0.6"/>
+            <path d="M30 35 Q50 30 70 35" fill="none" stroke="#f4b400" stroke-width="2" opacity="0.6"/>
+            <path d="M30 45 Q50 40 70 45" fill="none" stroke="#f4b400" stroke-width="2" opacity="0.6"/>
+            <path d="M35 55 Q50 50 65 55" fill="none" stroke="#f4b400" stroke-width="2" opacity="0.6"/>
+            <circle cx="42" cy="40" r="3" fill="#333"/>
+            <circle cx="58" cy="40" r="3" fill="#333"/>
+            <path d="M45 48 Q50 52 55 48" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+
+        <h1>【六年丙班】訊息公告欄</h1>
+        
+        <svg class="corn-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="transform: scaleX(-1);">
+            <path d="M50 95 Q20 80 10 40 Q30 90 50 95 Z" fill="#76c043" stroke="#5da035" stroke-width="2"/>
+            <path d="M50 95 Q80 80 90 40 Q70 90 50 95 Z" fill="#76c043" stroke="#5da035" stroke-width="2"/>
+            <ellipse cx="50" cy="45" rx="25" ry="40" fill="#fcd116" stroke="#f4b400" stroke-width="2"/>
+            <path d="M35 25 Q50 20 65 25" fill="none" stroke="#f4b400" stroke-width="2" opacity="0.6"/>
+            <path d="M30 35 Q50 30 70 35" fill="none" stroke="#f4b400" stroke-width="2" opacity="0.6"/>
+            <path d="M30 45 Q50 40 70 45" fill="none" stroke="#f4b400" stroke-width="2" opacity="0.6"/>
+            <path d="M35 55 Q50 50 65 55" fill="none" stroke="#f4b400" stroke-width="2" opacity="0.6"/>
+            <circle cx="42" cy="40" r="3" fill="#333"/>
+            <circle cx="58" cy="40" r="3" fill="#333"/>
+            <path d="M45 48 Q50 52 55 48" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+
+        <div class="controls">
+            <span id="syncStatus"></span>
+            <input type="date" id="datePicker" class="date-picker">
+        </div>
+    </header>
+
+    <div class="news-container">
+        <div class="news-header">
+            <span>🌱🎓 生態與教育新聞</span>
+            <div style="margin-left: auto; display: flex; gap: 8px; align-items: center;">
+                <button onclick="fetchDailyNews()" style="background:white; border:none; padding:4px 10px; border-radius:15px; cursor:pointer; font-size:0.77rem; color:#4a90e2; font-weight:bold; box-shadow: 0 1px 2px rgba(0,0,0,0.1); transition: 0.2s;">更新新聞 ↻</button>
+            </div>
+        </div>
+        <div class="news-list" id="newsList">
+            <div style="grid-column: span 2; text-align: center; padding: 20px; color: #666; font-weight:bold;">
+                📰 正在自動為您搜尋今日生態與教育新聞...
+            </div>
+        </div>
+    </div>
+
+    <div class="notes-container">
+        <div class="notes-left">
+            <div class="notes-label" id="notesLabel">今天注意事項：</div>
+            <textarea id="dailyNote" class="notes-textarea" placeholder="老師請在此輸入今日班級聯絡事項..."></textarea>
+        </div>
+        
+        <div class="notes-right">
+            <div class="duty-controls-wrapper">
+                <div class="duty-row">
+                    <span class="duty-label">①值日生：</span>
+                    <select id="duty1" class="duty-select">
+                        <option value="">--</option>
+                    </select>
+                    <select id="duty2" class="duty-select">
+                        <option value="">--</option>
+                    </select>
+                </div>
+                
+                <div class="duty-row">
+                    <span class="duty-label">②午餐組：</span>
+                    <select id="lunchService" class="duty-select">
+                        <option value="">--</option>
+                    </select>
+                </div>
+            </div>
+            
+            <textarea id="dutyNote" class="duty-textarea" placeholder="其他備註事項..."></textarea>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        //  設定區：請保留原本的 Web App URL 確保資料庫串接
+        // ==========================================
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwX5mdHEaVaDmqFLOapo_qTbQ63uy5PcZTtUw_2FwlHcVaWeQOcsrHzP6fIyxvvjR6g/exec'; 
+        
+        let currentDate = new Date().toISOString().split('T')[0];
+        let classData = {}; 
+        let saveTimeout = null; 
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('datePicker').value = currentDate;
+            initDropdowns(); 
+            
+            // 首次載入雲端資料
+            fetchDataFromCloud();
+            
+            // 首次載入今日新聞
+            fetchDailyNews();
+
+            // 自動更新：每 30 秒
+            setInterval(() => {
+                fetchDataFromCloud(true);
+            }, 30000);
+
+            // 日期變更監聽
+            document.getElementById('datePicker').addEventListener('change', (e) => {
+                currentDate = e.target.value;
+                loadDateData(currentDate);
+            });
+
+            // 注意事項監聽
+            document.getElementById('dailyNote').addEventListener('input', (e) => {
+                saveField('note', e.target.value);
+            });
+
+            // 監聽值日生與服務選單
+            ['duty1', 'duty2', 'lunchService'].forEach(id => {
+                document.getElementById(id).addEventListener('change', (e) => {
+                    saveField(id, e.target.value);
+                });
+            });
+
+            // 監聽備註欄位
+            document.getElementById('dutyNote').addEventListener('input', (e) => {
+                saveField('dutyNote', e.target.value);
+            });
+        });
+
+        // 通用欄位儲存函式
+        function saveField(fieldName, value) {
+            // 注意事項 (note) 維持獨立儲存以相容舊版資料庫格式
+            if (fieldName === 'note') {
+                classData['stickyNote'] = value;
+            } else {
+                const currentDayData = classData[currentDate] || {};
+                currentDayData[fieldName] = value;
+                classData[currentDate] = currentDayData;
+            }
+            triggerSave();
+        }
+
+        // 初始化學生座號選單
+        function initDropdowns() {
+            const dutySelects = [document.getElementById('duty1'), document.getElementById('duty2')];
+            const optionsHtml = Array.from({length: 27}, (_, i) => {
+                const num = (i + 1).toString().padStart(2, '0');
+                return `<option value="${num}">${num}號</option>`;
+            }).join('');
+            
+            dutySelects.forEach(select => {
+                select.innerHTML = '<option value="">--</option>' + optionsHtml;
+            });
+
+            const lunchSelect = document.getElementById('lunchService');
+            const days = ['一', '二', '三', '四', '五'];
+            let lunchHtml = '<option value="">--</option>';
+            days.forEach(d => {
+                lunchHtml += `<option value="${d}">${d}</option>`;
+            });
+            lunchSelect.innerHTML = lunchHtml;
+        }
+
+        async function fetchDataFromCloud(isBackground = false) {
+            if (!SCRIPT_URL.startsWith('http')) return;
+
+            if(!isBackground) document.getElementById('loadingOverlay').style.display = 'flex';
+            updateSyncStatus('同步中...');
+
+            try {
+                const response = await fetch(SCRIPT_URL);
+                const data = await response.json();
+                classData = data || {};
+                loadDateData(currentDate);
+                updateSyncStatus('已同步: ' + new Date().toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'}));
+            } catch (e) {
+                console.error(e);
+                updateSyncStatus('同步失敗');
+            } finally {
+                if(!isBackground) document.getElementById('loadingOverlay').style.display = 'none';
+            }
+        }
+
+        // 雲端同步儲存
+        function saveDataToCloud() {
+            updateSyncStatus('儲存中...');
+            
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(classData)
+            })
+            .then(res => res.text())
+            .then(txt => {
+                updateSyncStatus('已儲存: ' + new Date().toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'}));
+            })
+            .catch(err => {
+                console.error(err);
+                updateSyncStatus('儲存失敗');
+            });
+        }
+
+        // 防抖儲存機制
+        function triggerSave() {
+            updateSyncStatus('等待儲存...');
+            if (saveTimeout) clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                saveDataToCloud();
+            }, 1000); 
+        }
+
+        function updateSyncStatus(msg) {
+            document.getElementById('syncStatus').textContent = msg;
+        }
+
+        // 載入特定日期的聯絡簿與值日生資料
+        function loadDateData(date) {
+            const currentDayData = classData[date] || {};
+            
+            updateNotesLabelDate(date);
+
+            // 還原注意事項 (讀取全域變數 stickyNote)
+            document.getElementById('dailyNote').value = classData['stickyNote'] || '';
+
+            // 還原值日生
+            document.getElementById('duty1').value = currentDayData['duty1'] || '';
+            document.getElementById('duty2').value = currentDayData['duty2'] || '';
+            document.getElementById('lunchService').value = currentDayData['lunchService'] || '';
+
+            // 還原右下角備註
+            document.getElementById('dutyNote').value = currentDayData['dutyNote'] || '';
+        }
+
+        // 更新日期標籤
+        function updateNotesLabelDate(dateString) {
+            const parts = dateString.split('-');
+            if (parts.length === 3) {
+                const y = parseInt(parts[0]);
+                const m = parseInt(parts[1]);
+                const d = parseInt(parts[2]);
+                
+                const rocYear = y - 1911;
+                const dateObj = new Date(y, m - 1, d);
+                const dayOfWeek = ['日', '一', '二', '三', '四', '五', '六'][dateObj.getDay()];
+                
+                const labelText = `今天注意事項：民國${rocYear}年${m}月${d}日 星期${dayOfWeek}`;
+                document.getElementById('notesLabel').textContent = labelText;
+            }
+        }
+
+        // --- 自動抓取即時新聞 (過濾社會新聞，專注生態與教育) ---
+        const ENV_KEYWORDS = [
+            '生態', '環境', '氣候', '環保', '保育', '永續', '綠能', '減碳', 
+            '海洋', '森林', '淨零', '動物', '植物', '保育類', '極端氣候', 
+            '回收', '污染', '國家公園', '生物', '溼地', '野放', '珊瑚', '自然'
+        ];
+
+        const EDU_KEYWORDS = [
+            '教育', '學校', '學生', '教學', '校園', '閱讀', '學習', '課綱', 
+            '師生', '兒童', '少年', '獎項', '競賽', '國小', '雙語', '科展', 
+            '童軍', '素養', '數位學習', '本土語言', '大學', '高中', '國中', '老師'
+        ];
+
+        // 排除社會新聞與負面案件關鍵字
+        const EXCLUDE_KEYWORDS = [
+            '詐騙', '車禍', '命案', '竊盜', '搶劫', '偷竊', '性侵', '殺人', 
+            '毒品', '提告', '起訴', '違法', '違規', '縱火', '家暴', '鬥毆', 
+            '黑幫', '自殺', '砍傷', '槍擊', '打架', '糾紛', '酒駕', '判刑', 
+            '收押', '羈押', '查獲', '嫌犯', '逮捕', '偷拍', '走私', '社會',
+            '陳幸妤'
+        ];
+
+        async function fetchDailyNews() {
+            const newsList = document.getElementById('newsList');
+            if (!newsList) return;
+
+            newsList.innerHTML = `<div style="grid-column: span 2; text-align: center; padding: 20px; color: #666; font-weight:bold;">
+                📰 正在搜尋今日生態與教育新聞...
+            </div>`;
+
+            const tags = [
+                { class: 'tag-intl', label: '生態' },
+                { class: 'tag-sci', label: '教育' },
+                { class: 'tag-local', label: '環境' },
+                { class: 'tag-sci', label: '校園' }
+            ];
+
+            function filterArticles(articles) {
+                // 1. 先排除包含社會新聞/犯罪事件/特定關鍵字
+                const cleanArticles = articles.filter(item => {
+                    const content = (item.title || '') + (item.summary || item.description || '');
+                    return !EXCLUDE_KEYWORDS.some(kw => content.includes(kw));
+                });
+
+                // 2. 篩選符合生態或教育主題的新聞
+                const envEduArticles = cleanArticles.filter(item => {
+                    const content = (item.title || '') + (item.summary || item.description || '');
+                    return ENV_KEYWORDS.some(kw => content.includes(kw)) || EDU_KEYWORDS.some(kw => content.includes(kw));
+                });
+
+                const seenTitles = new Set();
+                const finalArticles = [];
+
+                // 優先加入符合生態教育主題的新聞
+                for (const item of envEduArticles) {
+                    if (item.title && !seenTitles.has(item.title)) {
+                        seenTitles.add(item.title);
+                        finalArticles.push(item);
+                    }
+                }
+
+                // 3. 若不足 4 則，從其他非社會類生活新聞補充
+                if (finalArticles.length < 4) {
+                    for (const item of cleanArticles) {
+                        if (item.title && !seenTitles.has(item.title)) {
+                            seenTitles.add(item.title);
+                            finalArticles.push(item);
+                            if (finalArticles.length >= 4) break;
+                        }
+                    }
+                }
+
+                // 4. 若總數仍不足 4 則，使用預設優質新聞題庫補足至 4 則
+                if (finalArticles.length < 4) {
+                    for (const item of fallbackArticles) {
+                        if (!seenTitles.has(item.title)) {
+                            seenTitles.add(item.title);
+                            finalArticles.push(item);
+                            if (finalArticles.length >= 4) break;
+                        }
+                    }
+                }
+
+                return finalArticles.slice(0, 4);
+            }
+
+            function renderNewsCards(articles) {
+                newsList.innerHTML = '';
+                const displayArticles = filterArticles(articles);
+
+                displayArticles.forEach((item, index) => {
+                    const tag = tags[index % tags.length];
+                    const title = item.title || "無標題";
+                    const link = item.link || "#";
+                    let summary = (item.summary || item.description || "").replace(/<[^>]+>/g, '').trim();
+                    if (summary.length > 45) {
+                        summary = summary.substring(0, 45) + '...';
+                    }
+                    if (!summary) summary = "點擊閱讀今日最新報導，了解更多詳細內容！";
+
+                    const cardHtml = `
+                        <a href="${link}" target="_blank" rel="noopener noreferrer" class="news-card">
+                            <span class="news-tag ${tag.class}">${tag.label}</span>
+                            <div class="news-content">
+                                <div class="news-title">${title}</div>
+                                <div class="news-summary">${summary}</div>
+                            </div>
+                            <div class="news-action">閱讀 ➔</div>
+                        </a>
+                    `;
+                    newsList.insertAdjacentHTML('beforeend', cardHtml);
+                });
+            }
+
+            // 預備備援新聞 (限定生態、環境與教育主題)
+            const fallbackArticles = [
+                {
+                    title: "全國科展與永續教育成果展登場 引導學生關心在地生態",
+                    summary: "教育部推動校園綠能與永續環境教育，透過多元實驗與實作體驗，培養學生對自然與科學的興趣。",
+                    link: "https://news.ltn.com.tw"
+                },
+                {
+                    title: "台灣海底發現全球首件現生革龜化石 補上演化拼圖",
+                    summary: "國立台灣大學團隊研究指出，現存體型最大海龜革龜的化石極為罕見，此發現對海洋生物保育與演化深具意義。",
+                    link: "https://news.ltn.com.tw"
+                },
+                {
+                    title: "推動數位閱讀與本土語言教學 提升學童多元自主學習能力",
+                    summary: "各縣市學校積極推動豐富閱讀計畫與數位學習平台，營造友善雙語與本土語言閱讀環境。",
+                    link: "https://news.ltn.com.tw"
+                },
+                {
+                    title: "極端氣候頻發 各國加強生物多樣性保護區防禦能力",
+                    summary: "氣象與生態專家呼籲強化濕地與山林保育，提升自然生態系對氣候災害的韌性。",
+                    link: "https://news.ltn.com.tw"
+                }
+            ];
+
+            const rssTarget = 'https://news.ltn.com.tw/rss/life.xml';
+            
+            // 策略 1: 使用 rss2json API 服務
+            try {
+                const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssTarget)}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.status === 'ok' && data.items && data.items.length > 0) {
+                        const items = data.items.map(item => ({
+                            title: item.title,
+                            summary: item.description,
+                            link: item.link
+                        }));
+                        renderNewsCards(items);
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.warn('新聞抓取策略 1 (rss2json) 失敗:', e);
+            }
+
+            // 策略 2: 使用 corsproxy.io 代理
+            try {
+                const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(rssTarget)}`);
+                if (res.ok) {
+                    const text = await res.text();
+                    const xmlDoc = new DOMParser().parseFromString(text, "text/xml");
+                    const items = Array.from(xmlDoc.querySelectorAll("item")).map(item => ({
+                        title: item.querySelector("title")?.textContent,
+                        summary: item.querySelector("description")?.textContent,
+                        link: item.querySelector("link")?.textContent
+                    }));
+                    if (items.length > 0) {
+                        renderNewsCards(items);
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.warn('新聞抓取策略 2 (corsproxy) 失敗:', e);
+            }
+
+            // 策略 3: 使用 allorigins 代理
+            try {
+                const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(rssTarget)}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.contents) {
+                        const xmlDoc = new DOMParser().parseFromString(data.contents, "text/xml");
+                        const items = Array.from(xmlDoc.querySelectorAll("item")).map(item => ({
+                            title: item.querySelector("title")?.textContent,
+                            summary: item.querySelector("description")?.textContent,
+                            link: item.querySelector("link")?.textContent
+                        }));
+                        if (items.length > 0) {
+                            renderNewsCards(items);
+                            return;
+                        }
+                    }
+                }
+            } catch (e) {
+                console.warn('新聞抓取策略 3 (allorigins) 失敗:', e);
+            }
+
+            // 若所有網路代理皆無法連線，顯示備援新聞資料
+            renderNewsCards(fallbackArticles);
+        }
+    </script>
+</body>
+</html>
