@@ -77,9 +77,9 @@
             margin-left: 5px;
         }
 
-        /* --- 當日新聞區塊樣式 (改為 50vh) --- */
+        /* --- 當日新聞區塊樣式 (修改為 30vh 佔據 30% 空間) --- */
         .news-container {
-            height: 50vh; /* 設定為佔據全畫面 50% 的高度 */
+            height: 30vh; /* 設定為佔據全畫面 30% 的高度 */
             flex-shrink: 0;
             display: flex;
             flex-direction: column;
@@ -150,15 +150,16 @@
             flex-grow: 1;
         }
 
+        /* 修改新聞標題與內文字體大小 */
         .news-title {
-            font-size: 1.07rem;
+            font-size: 16pt; /* 標題稍微大一點，維持層次感 */
             font-weight: bold;
             color: #2c3e50;
             margin-bottom: 5px;
         }
 
         .news-summary {
-            font-size: 0.87rem;
+            font-size: 14pt; /* 依需求修改為 14pt */
             color: #666;
             line-height: 1.4;
         }
@@ -179,7 +180,7 @@
             color: white;
         }
 
-        /* 底部功能區塊 (班級聯絡簿，自動填滿剩下的 50% 空間) */
+        /* 底部功能區塊 (班級聯絡簿，自動填滿剩下的 70% 空間) */
         .notes-container {
             flex: 1; 
             flex-shrink: 0;
@@ -217,7 +218,6 @@
             gap: 5px;
         }
 
-        /* 修改：把「今天注意事項」文字大小設定為 16pt */
         .notes-label {
             font-weight: bold;
             margin-bottom: 5px;
@@ -246,7 +246,6 @@
         }
         .notes-textarea:focus { border-color: var(--primary-color); outline: none; box-shadow: 0 0 0 2px rgba(74,144,226,0.2); }
         
-        /* 修改：把「備註欄」文字大小設定為 20pt */
         .duty-textarea {
             flex: 1; 
             width: 100%;
@@ -257,7 +256,7 @@
             font-family: inherit;
             font-weight: bold;
             resize: none;
-            font-size: 19pt;
+            font-size: 24pt; /* 將備註欄字體大小修改為 24pt */
             color: #333;
         }
         .duty-textarea:focus { border-color: var(--primary-color); outline: none; }
@@ -620,31 +619,33 @@
                 // 3. 若符合主題新聞數量充裕，隨機打亂以讓每次點擊都有新鮮感
                 pool.sort(() => Math.random() - 0.5);
 
-                // 4. 若不足 4 則，從其他非社會類新聞補充
-                if (pool.length < 4) {
+                // 4. 若不足 2 則，從其他非社會類新聞補充
+                if (pool.length < 2) {
                     for (const item of cleanArticles) {
                         if (item.title && !seenTitles.has(item.title)) {
                             seenTitles.add(item.title);
                             pool.push(item);
-                            if (pool.length >= 4) break;
+                            if (pool.length >= 2) break;
                         }
                     }
                 }
 
-                // 5. 若總數仍不足 4 則，使用預設優質新聞題庫補足
-                if (pool.length < 4) {
+                // 5. 若總數仍不足 2 則，使用預設優質新聞題庫補足
+                if (pool.length < 2) {
                     for (const item of fallbackArticles) {
                         if (!seenTitles.has(item.title)) {
                             seenTitles.add(item.title);
                             pool.push(item);
-                            if (pool.length >= 4) break;
+                            if (pool.length >= 2) break;
                         }
                     }
                 }
 
-                return pool.slice(0, 4);
+                // 依要求只回傳兩則新聞
+                return pool.slice(0, 2);
             }
 
+            // 這裡原本被註解掉了，現已修復！
             function renderNewsCards(articles) {
                 newsList.innerHTML = '';
                 const displayArticles = filterArticles(articles);
@@ -677,7 +678,7 @@
                     refreshBtn.textContent = '更新新聞 ↻';
                     refreshBtn.style.opacity = '1';
                 }
-            }
+            } // 結束 renderNewsCards
 
             // 預備備援新聞 (包含國內與國際主題)
             const fallbackArticles = [
@@ -733,7 +734,7 @@
             }
 
             // 策略 2: 若策略 1 條目不夠，使用 corsproxy.io 即時代理抓取全頻道新聞
-            if (allItems.length < 4) {
+            if (allItems.length < 2) {
                 try {
                     for (const rss of rssTargets) {
                         const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(rss)}?_t=${timestamp}`);
